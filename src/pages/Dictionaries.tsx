@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { BookOpen, Building2, CalendarDays, Database, ExternalLink, ListTodo, Plus, Sparkles, Trash2 } from "lucide-react";
+import { BookOpen, Building2, CalendarDays, Database, ExternalLink, FileText, ListTodo, Plus, Sparkles, Trash2 } from "lucide-react";
 import { Badge, Card, CardHeader, toast } from "../components/ui";
 import {
   addRagDoc, deleteRagDoc, fetchBotCategories, fetchBotPositions, fetchDicts, fetchRagDocs, fetchTariffs, fetch1cDeptSummary,
   saveBotCategories, saveBotPositions, saveDicts, saveTariffs,
-  type BotCategory, type Dicts, type RagDoc, type Tariff, type DeptSummaryRow,
+  addDocTemplate, deleteDocTemplate, fetchDocTemplates,
+  type BotCategory, type Dicts, type RagDoc, type Tariff, type DeptSummaryRow, type DocTemplate,
 } from "../api";
 import { EDITABLE_STATUSES, PRIORITIES, priorityTone, statusTone } from "../data/demo";
 
@@ -24,6 +25,7 @@ const CATS = [
   { id: "calendar", label: "Календарь", icon: CalendarDays },
   { id: "onec", label: "1С", icon: Database },
   { id: "ai", label: "База знаний", icon: Sparkles },
+  { id: "doctpl", label: "Шаблоны договоров", icon: FileText },
 ] as const;
 type CatId = (typeof CATS)[number]["id"];
 
@@ -473,6 +475,96 @@ function KnowledgeBaseDicts() {
   );
 }
 
+function DocTemplatesDicts() {
+  const [templates, setTemplates] = useState<DocTemplate[] | null>(null);
+  const [name, setName] = useState("");
+  const [category, setCategory] = useState("Договоры");
+  const [body, setBody] = useState("");
+  const [reqFieldsInput, setReqFieldsInput] = useState("subject, amount, term");
+  const [saving, setSaving] = useState(false);
+
+  const load = () => fetchDocTemplates().then(setTemplates).catch(() => setTemplates([]));
+  useEffect(() => { load(); }, []);
+
+  const add = async () => {
+    if (!name.trim() || !body.trim()) { toast("Заполните название и текст шаблона"); return; }
+    setSaving(true);
+    try {
+      const requiredFields = reqFieldsInput.split(",").map((t) => t.trim()).filter(Boolean);
+      const r = await addDocTemplate({ name: name.trim(), category: category.trim(), body: body.trim(), requiredFields });
+      if (r.ok) {
+        toast("Шаблон добавлен");
+        setName(""); setBody("");
+        load();
+      } else {
+        toast(r.error || "Не удалось добавить шаблон");
+      }
+    } catch {
+      toast("Не удалось добавить — проверьте соединение и попробуйте снова");
+    } finally { setSaving(false); }
+  };
+
+  const remove = async (id: string) => {
+    try {
+      const r = await deleteDocTemplate(id);
+      if (r.ok) { toast("Шаблон удалён"); load(); } else { toast(r.error || "Не удалось удалить"); }
+    } catch {
+      toast("Не удалось удалить — попробуйте ещё раз");
+    }
+  };
+
+  const inputClass = "w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm transition focus:border-brand-500 focus:bg-white focus:ring-2 focus:ring-brand-100 focus:outline-none";
+
+  return (
+    <Card>
+      <CardHeader title="Шаблоны договоров" />
+      <div className="space-y-3 border-b border-slate-100 p-5">
+        <p className="text-xs text-slate-400">
+          ИИ сам предлагает подходящий шаблон (по истории клиента), автозаполняет реквизиты организации/контрагента из 1С/CRM и спрашивает только недостающие поля — предмет, сумму, срок и т.п. Плейсхолдеры в тексте — вида <code className="rounded bg-slate-100 px-1">{"{{subject}}"}</code>. Поля из списка «обязательные» ИИ ОБЯЗАТЕЛЬНО уточнит у пользователя, если их нет в тексте задачи.
+        </p>
+        <div className="grid grid-cols-2 gap-3 max-sm:grid-cols-1">
+          <input placeholder="Название шаблона (напр. «Договор оказания услуг»)" value={name}
+            onChange={(e) => setName(e.target.value)} className={inputClass} />
+          <input placeholder="Категория (напр. «Договоры»)" value={category}
+            onChange={(e) => setCategory(e.target.value)} className={inputClass} />
+        </div>
+        <textarea placeholder="Текст шаблона с плейсхолдерами {{organization}}, {{counterparty}}, {{subject}}, {{amount}}, {{term}}…" value={body} rows={8}
+          onChange={(e) => setBody(e.target.value)} className={inputClass + " font-mono"} />
+        <input placeholder="Обязательные поля через запятую (напр. subject, amount, term)" value={reqFieldsInput}
+          onChange={(e) => setReqFieldsInput(e.target.value)} className={inputClass} />
+        <button onClick={add} disabled={saving}
+          className="flex items-center gap-1.5 rounded-lg bg-brand-600 px-3.5 py-2 text-[13px] font-medium text-white hover:bg-brand-700 disabled:opacity-60">
+          <Plus className="size-3.5" /> {saving ? "Добавляем…" : "Добавить шаблон"}
+        </button>
+      </div>
+      {templates === null ? (
+        <p className="px-5 py-8 text-center text-sm text-slate-400">Загружаем…</p>
+      ) : templates.length ? (
+        <div className="divide-y divide-slate-100">
+          {templates.map((t) => (
+            <div key={t.id} className="flex items-start justify-between gap-3 px-5 py-3.5">
+              <div className="min-w-0">
+                <div className="text-[13.5px] font-medium text-slate-700">{t.name}</div>
+                <div className="mt-0.5 text-xs text-slate-500">{t.category}</div>
+                {t.requiredFields.length > 0 && (
+                  <div className="mt-1.5 flex flex-wrap gap-1">
+                    {t.requiredFields.map((f) => <Badge key={f} tone="gray">{f}</Badge>)}
+                  </div>
+                )}
+              </div>
+              <button onClick={() => remove(t.id)} className="shrink-0 rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600">
+                <Trash2 className="size-4" />
+              </button>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="px-5 py-8 text-center text-sm text-slate-400">Шаблонов пока нет.</p>
+      )}
+    </Card>
+  );
+}
+
 export default function Dictionaries() {
   const [cat, setCat] = useState<CatId>("tasks");
   return (
@@ -496,6 +588,7 @@ export default function Dictionaries() {
       {cat === "calendar" && <CalendarDicts />}
       {cat === "onec" && <OneCDicts />}
       {cat === "ai" && <KnowledgeBaseDicts />}
+      {cat === "doctpl" && <DocTemplatesDicts />}
     </div>
   );
 }

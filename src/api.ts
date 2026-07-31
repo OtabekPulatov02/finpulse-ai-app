@@ -655,6 +655,19 @@ export const addRagDoc = (data: { title: string; content: string; tags?: string[
 export const deleteRagDoc = (id: string) =>
   aiPost<{ ok: boolean; error?: string }>({ action: "rag_delete", id });
 
+export interface DocTemplate {
+  id: string; name: string; category: string; body: string; requiredFields: string[];
+  createdAt: string; by: string;
+}
+export const fetchDocTemplates = () =>
+  aiGet<{ ok: boolean; templates: DocTemplate[] }>("r=doctpl_list").then((d) => d.templates ?? []);
+export const addDocTemplate = (data: { name: string; category?: string; body: string; requiredFields?: string[] }) =>
+  aiPost<{ ok: boolean; template?: DocTemplate; error?: string }>({ action: "doctpl_add", ...data });
+export const updateDocTemplate = (id: string, patch: Partial<{ name: string; category: string; body: string; requiredFields: string[] }>) =>
+  aiPost<{ ok: boolean; template?: DocTemplate; error?: string }>({ action: "doctpl_update", id, ...patch });
+export const deleteDocTemplate = (id: string) =>
+  aiPost<{ ok: boolean; error?: string }>({ action: "doctpl_delete", id });
+
 export interface AgentMessage { role: "user" | "assistant"; content: string }
 export interface AgentStep { tool: string; args: string; ok: boolean }
 
