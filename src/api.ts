@@ -455,124 +455,67 @@ export interface App1C {
 }
 
 async function get1c<T>(params: string): Promise<T> {
-  const r = await fetch(`${API_1C}?${params}`, { signal: AbortSignal.timeout(25000), headers: authHeaders() });
-  if (!r.ok && r.status !== 401) throw new Error(`HTTP ${r.status}`);
-  return r.json();
+     const r = await fetch(`${API_1C}?${params}`, { signal: AbortSignal.timeout(25000), headers: authHeaders() });
+     if (!r.ok && r.status !== 401) throw new Error(`HTTP ${r.status}`);
+     return r.json();
+}
+
+async function post1c<T>(body: Record<string, unknown>, timeoutMs = 30000): Promise<T> {
+     const r = await fetch(API_1C, {
+            method: "POST",
+            headers: { "content-type": "application/json", ...authHeaders() },
+            body: JSON.stringify(body),
+            signal: AbortSignal.timeout(timeoutMs),
+     });
+     return r.json();
 }
 
 export const fetch1cPing = () =>
-  get1c<{ ok: boolean; apps?: App1C[]; error?: string }>("r=ping");
+     get1c<{ ok: boolean; apps?: App1C[]; error?: string }>("r=ping");
 
-export const sync1cOrgs = async (app: string) => {
-  const r = await fetch(API_1C, {
-    method: "POST",
-    headers: { "content-type": "application/json", ...authHeaders() },
-    body: JSON.stringify({ action: "sync_orgs", app }),
-    signal: AbortSignal.timeout(30000),
-  });
-  return r.json() as Promise<{ ok: boolean; created?: number; updated?: number; total?: number; error?: string }>;
-};
+export const sync1cOrgs = (app: string) =>
+     post1c<{ ok: boolean; created?: number; updated?: number; total?: number; error?: string }>({ action: "sync_orgs", app });
 
-export const sync1cCounterparties = async (app: string) => {
-  const r = await fetch(API_1C, {
-    method: "POST",
-    headers: { "content-type": "application/json", ...authHeaders() },
-    body: JSON.stringify({ action: "sync_counterparties", app }),
-    signal: AbortSignal.timeout(30000),
-  });
-  return r.json() as Promise<{ ok: boolean; total?: number; mapped?: number; error?: string }>;
-};
+export const sync1cCounterparties = (app: string) =>
+     post1c<{ ok: boolean; total?: number; mapped?: number; error?: string }>({ action: "sync_counterparties", app });
+export const sync1cNomenclature = (app: string) =>
+     post1c<{ ok: boolean; total?: number; mapped?: number; error?: string }>({ action: "sync_nomenclature", app });
 
-export const sync1cNomenclature = async (app: string) => {
-  const r = await fetch(API_1C, {
-    method: "POST",
-    headers: { "content-type": "application/json", ...authHeaders() },
-    body: JSON.stringify({ action: "sync_nomenclature", app }),
-    signal: AbortSignal.timeout(30000),
-  });
-  return r.json() as Promise<{ ok: boolean; total?: number; mapped?: number; error?: string }>;
-};
-
-export const sync1cContracts = async (app: string) => {
-  const r = await fetch(API_1C, {
-    method: "POST",
-    headers: { "content-type": "application/json", ...authHeaders() },
-    body: JSON.stringify({ action: "sync_contracts", app }),
-    signal: AbortSignal.timeout(30000),
-  });
-  return r.json() as Promise<{ ok: boolean; total?: number; owners?: number; defaults?: number; error?: string }>;
-};
+export const sync1cContracts = (app: string) =>
+     post1c<{ ok: boolean; total?: number; owners?: number; defaults?: number; error?: string }>({ action: "sync_contracts", app });
 
 export interface Doc1cLogItem {
-  num: number; entity: string; ref: string; number: string | null; app: string; appName: string | null;
-  company: string; type: string; amount: number | null; counterparty: string | null; at: string; by: string;
+     num: number; entity: string; ref: string; number: string | null; app: string; appName: string | null;
+     company: string; type: string; amount: number | null; counterparty: string | null; at: string; by: string;
 }
-
 export const fetch1cDoclog = (limit = 50) =>
-  get1c<{ ok: boolean; items?: Doc1cLogItem[]; error?: string }>(`r=doclog&limit=${limit}`);
+     get1c<{ ok: boolean; items?: Doc1cLogItem[]; error?: string }>(`r=doclog&limit=${limit}`);
 
-export const cancelAiDoc1c = async (num: number) => {
-  const r = await fetch(API_1C, {
-    method: "POST",
-    headers: { "content-type": "application/json", ...authHeaders() },
-    body: JSON.stringify({ action: "cancel_ai_doc", num }),
-    signal: AbortSignal.timeout(20000),
-  });
-  return r.json() as Promise<{ ok: boolean; error?: string }>;
-};
+export const cancelAiDoc1c = (num: number) =>
+     post1c<{ ok: boolean; error?: string }>({ action: "cancel_ai_doc", num }, 20000);
 
 export interface Report1cItem {
-  name: string; periodicity: string; lastPeriodLabel: string; lastPeriodEnd: string;
-  lastPreparedAt: string; nextExpectedPeriodEnd: string; periodsSkipped: number;
-  appCode: string; appName: string;
+     name: string; periodicity: string; lastPeriodLabel: string; lastPeriodEnd: string;
+     lastPreparedAt: string; nextExpectedPeriodEnd: string; periodsSkipped: number;
+     appCode: string; appName: string;
 }
-
 export const fetch1cReports = () =>
-  get1c<{ ok: boolean; items?: Report1cItem[]; note?: string; error?: string }>("r=reports");
+     get1c<{ ok: boolean; items?: Report1cItem[]; note?: string; error?: string }>("r=reports");
 
-export const sync1cEmployees = async (app: string) => {
-  const r = await fetch(API_1C, {
-    method: "POST",
-    headers: { "content-type": "application/json", ...authHeaders() },
-    body: JSON.stringify({ action: "sync_employees", app }),
-    signal: AbortSignal.timeout(30000),
-  });
-  return r.json() as Promise<{ ok: boolean; total?: number; mapped?: number; error?: string }>;
-};
+export const sync1cEmployees = (app: string) =>
+     post1c<{ ok: boolean; total?: number; mapped?: number; error?: string }>({ action: "sync_employees", app });
 
-export const sync1cPositions = async (app: string) => {
-  const r = await fetch(API_1C, {
-    method: "POST",
-    headers: { "content-type": "application/json", ...authHeaders() },
-    body: JSON.stringify({ action: "sync_positions", app }),
-    signal: AbortSignal.timeout(30000),
-  });
-  return r.json() as Promise<{ ok: boolean; total?: number; mapped?: number; error?: string }>;
-};
-
-export const sync1cDepartments = async (app: string) => {
-  const r = await fetch(API_1C, {
-    method: "POST",
-    headers: { "content-type": "application/json", ...authHeaders() },
-    body: JSON.stringify({ action: "sync_departments", app }),
-    signal: AbortSignal.timeout(30000),
-  });
-  return r.json() as Promise<{ ok: boolean; total?: number; mapped?: number; error?: string }>;
-};
+export const sync1cPositions = (app: string) =>
+     post1c<{ ok: boolean; total?: number; mapped?: number; error?: string }>({ action: "sync_positions", app });
+export const sync1cDepartments = (app: string) =>
+     post1c<{ ok: boolean; total?: number; mapped?: number; error?: string }>({ action: "sync_departments", app });
 
 export interface DeptSummaryRow { code: string; name: string; count: number; items: string[] }
 export const fetch1cDeptSummary = () =>
-  get1c<{ ok: boolean; bases?: DeptSummaryRow[]; error?: string }>("r=dept_summary").then((d) => d.bases ?? []);
+     get1c<{ ok: boolean; bases?: DeptSummaryRow[]; error?: string }>("r=dept_summary").then((d) => d.bases ?? []);
 
-export const sync1cReports = async (app: string) => {
-  const r = await fetch(API_1C, {
-    method: "POST",
-    headers: { "content-type": "application/json", ...authHeaders() },
-    body: JSON.stringify({ action: "sync_reports", app }),
-    signal: AbortSignal.timeout(30000),
-  });
-  return r.json() as Promise<{ ok: boolean; total?: number; types?: number; error?: string }>;
-};
+export const sync1cReports = (app: string) =>
+     post1c<{ ok: boolean; total?: number; types?: number; error?: string }>({ action: "sync_reports", app });
 
 /* ---------------- Настройки бота и категории услуг ---------------- */
 export interface BotSettings { slaHours: number; workStart: number; workEnd: number; tzOffset: number }
