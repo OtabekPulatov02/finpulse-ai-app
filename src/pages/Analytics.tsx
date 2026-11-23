@@ -29,9 +29,13 @@ export default function Analytics() {
     { label: "Просрочено", value: String(overdueTasks), icon: AlertCircle, tone: "text-red-600 bg-red-50" },
   ];
 
-  const perf = useMemo(() => employees
-    .filter((e) => e.active)
-    .map((e) => {
+  /* Список сотрудников доступен только админу: бухгалтеру берём исполнителей
+     из самих задач (раньше он видел «Пока нет задач, назначенных сотрудникам»). */
+  const perf = useMemo(() => (employees.length
+    ? employees.filter((e) => e.active).map((e) => e.name)
+    : [...new Set(tasks.map((t) => t.assignee).filter((a) => a && a !== "не назначен" && a !== "—"))])
+    .map((name) => {
+      const e = { name };
       const own = tasks.filter((t) => t.assignee === e.name);
       const done = own.filter((t) => t.status === "Выполнена");
       const overdue = own.filter(isOverdue).length;
@@ -48,6 +52,27 @@ export default function Analytics() {
     return counts.map((c) => ({ ...c, w: Math.round((c.n / max) * 100), c: statusColor[c.label] }));
   }, [tasks]);
 
+  /* Раньше кнопка «Экспорт» только показывала «скоро будет» — теперь отдаёт CSV для Excel */
+  const exportCsv = () => {
+    const rows: (string | number)[][] = [
+      ["Показатель", "Значение"],
+      ...kpi.map((k) => [k.label, k.value]),
+      [],
+      ["Сотрудник", "Всего задач", "Выполнено", "Просрочено"],
+      ...perf.map((p) => [p.name, p.total, p.done, p.overdue]),
+      [],
+      ["Статус", "Задач"],
+      ...statusBreakdown.map((b) => [b.label, b.n]),
+    ];
+    const csv = "\ufeff" + rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(";")).join("\r\n");
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+    a.download = `finpulse-analytics-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+    toast("Отчёт скачан");
+  };
+
   const fromBotCount = tasks.filter((t) => t.status === "Новая" && t.fromBot).length;
 
   return (
@@ -57,8 +82,8 @@ export default function Analytics() {
           <h1 className="text-2xl font-bold tracking-tight">Аналитика</h1>
           <p className="mt-0.5 text-sm text-slate-500">Показатели на {new Date().toLocaleDateString("ru-RU")}</p>
         </div>
-        <button onClick={() => toast("Экспорт отчёта скоро будет доступен")} className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium hover:bg-slate-50">
-          <Download className="size-4" /> Экспорт отчёта
+        <button onClick={exportCsv} className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium hover:bg-slate-50">
+          <Download className="size-4" />Скачать отчёт (CSV)
         </button>
       </div>
 

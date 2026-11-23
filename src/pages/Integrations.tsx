@@ -1,99 +1,98 @@
+/* Telegram-бот: живое состояние подключения и инструкция привязки группы.
+   Раньше здесь были поля с вшитыми в код значениями, тумблеры без сохранения
+   и кнопка «Сохранить», которая ничего не сохраняла (UX-аудит 23.11.2026).
+   Секреты (токен, код привязки, ключи базы) в интерфейсе не показываем:
+   они живут только в Vercel → Environment Variables. */
+import { useEffect, useState } from "react";
+import { Activity, CheckCircle2, ChevronDown, Copy, XCircle } from "lucide-react";
 import { fetchPing } from "../api";
-import { Activity, Copy, Database, Eye, Send } from "lucide-react";
-import { Badge, Card, CardHeader, Toggle, toast } from "../components/ui";
+import { Badge, Button, Card, CardHeader, toast } from "../components/ui";
 
-const inp = "w-full rounded-lg border border-slate-200 px-3 py-2 font-mono text-[12.5px] tracking-wide focus:border-brand-500 focus:outline-none";
+const WEBHOOK = "https://finpulse-crm.vercel.app/api/bot";
 
-function MaskedRow({ label, value, hint, secret }: { label: string; value: string; hint?: string; secret?: boolean }) {
+type Ping = { ok: boolean; tasks: number; group: boolean; bot: string };
+
+function Row({ ok, title, hint }: { ok: boolean | null; title: string; hint?: string }) {
   return (
-    <div>
-      <label className="mb-1.5 block text-[13px] font-medium">{label}</label>
-      <div className="flex gap-2">
-        <input type={secret ? "password" : "text"} value={value} readOnly className={inp} />
-        {secret && (
-          <button onClick={() => toast("Просмотр доступен только супер-админу")} className="rounded-lg border border-slate-200 p-2 text-slate-500 hover:bg-slate-50"><Eye className="size-4" /></button>
-        )}
-        <button onClick={() => toast("Скопировано в буфер обмена")} className="rounded-lg border border-slate-200 p-2 text-slate-500 hover:bg-slate-50"><Copy className="size-4" /></button>
+    <div className="flex items-start gap-3 px-5 py-3.5">
+      {ok === null ? <span className="mt-0.5 size-5 animate-pulse rounded-full bg-slate-200" />
+        : ok ? <CheckCircle2 className="mt-0.5 size-5 shrink-0 text-emerald-500" /> : <XCircle className="mt-0.5 size-5 shrink-0 text-red-500" />}
+      <div>
+        <div className="text-[14px] font-medium">{title}</div>
+        {hint && <div className="mt-0.5 text-[13px] text-slate-500">{hint}</div>}
       </div>
-      {hint && <p className="mt-1.5 text-xs text-slate-400">{hint}</p>}
     </div>
   );
 }
 
-export default function Integrations() {
+export default function TelegramPanel() {
+  const [ping, setPing] = useState<Ping | null>(null);
+  const [failed, setFailed] = useState(false);
+  const [devOpen, setDevOpen] = useState(false);
+  const check = () => {
+    setPing(null); setFailed(false);
+    const t0 = performance.now();
+    return fetchPing()
+      .then((r) => { setPing(r); return Math.round(performance.now() - t0); })
+      .catch(() => { setFailed(true); return null; });
+  };
+  useEffect(() => { void check(); }, []);
+  const loading = !ping && !failed;
+
   return (
-    <div className="space-y-5">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Интеграции</h1>
-        <p className="mt-0.5 text-sm text-slate-500">Telegram-бот и база данных</p>
-      </div>
-
-      <div className="grid grid-cols-2 items-start gap-4 max-xl:grid-cols-1">
-        <Card>
-          <CardHeader
-            title="Telegram-бот"
-            action={<Badge tone="green">Подключён</Badge>}
-          />
-          <div className="space-y-4 p-5">
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="mb-1.5 block text-[13px] font-medium">Название бота</label>
-                <input defaultValue="Finpulse · Бухгалтерия" className={inp.replace("font-mono ", "")} />
-              </div>
-              <div>
-                <label className="mb-1.5 block text-[13px] font-medium">Username</label>
-                <input defaultValue="@finpulse_crm_bot" className={inp.replace("font-mono ", "")} />
-              </div>
-            </div>
-            <MaskedRow label="Токен бота" value="0000000000:XXXXXXXXXXXXXXXXXXXXXXXX" secret hint="Выдаётся в @BotFather. При смене — обновите переменную и webhook." />
-            <MaskedRow label="Webhook URL" value="https://finpulse-crm.vercel.app/api/bot" />
-            <MaskedRow label="Код привязки группы" value="finpulse2026" secret />
-            <div className="flex items-center justify-between gap-4 border-t border-slate-100 pt-4">
-              <span className="text-[13px] font-medium">Уведомлять группу о новых задачах</span>
-              <Toggle />
-            </div>
-            <div className="flex items-center justify-between gap-4">
-              <span className="text-[13px] font-medium">Уведомлять клиента о смене статуса</span>
-              <Toggle />
-            </div>
-          </div>
-          <div className="flex justify-between border-t border-slate-200 px-5 py-4">
-            <button onClick={() => { fetchPing().then((r) => toast(r.ok ? `Бот на связи: ${r.bot} · задач в базе: ${r.tasks} · группа ${r.group ? "подключена" : "не подключена"}` : "Бот не отвечает")).catch(() => toast("Бот не отвечает — проверьте деплой")); }} className="flex items-center gap-2 rounded-lg border border-slate-200 px-3.5 py-2 text-[13px] font-medium hover:bg-slate-50"><Activity className="size-4" />Проверить</button>
-            <button onClick={() => toast("Настройки бота сохранены")} className="rounded-lg bg-brand-600 px-4 py-2 text-[13px] font-medium text-white hover:bg-brand-700">Сохранить</button>
-          </div>
-        </Card>
-
-        <div className="space-y-4">
-          <Card>
-            <CardHeader title="База данных · Redis" action={<Badge tone="green">Подключена</Badge>} />
-            <div className="space-y-4 p-5">
-              <MaskedRow label="REST URL" value="https://xxxxxx.upstash.io" secret />
-              <MaskedRow label="REST Token" value="AXXXXXXXXXXXXXXXXXXXXXX" secret />
-              <div className="rounded-lg border border-brand-200 bg-brand-50 p-3.5 text-xs leading-relaxed text-brand-700">
-                <Database className="mb-1 size-4" />
-                Ключи задаются в Vercel → Environment Variables. После изменения нужен повторный деплой.
-                Не удаляйте ключи <b>task:*</b> и <b>user:*</b> — это активные данные.
-              </div>
-            </div>
-            <div className="flex justify-end border-t border-slate-200 px-5 py-4">
-              <button onClick={() => { const t0 = performance.now(); fetchPing().then(() => toast(`PING → PONG · ${Math.round(performance.now() - t0)} мс · Redis доступен`)).catch(() => toast("Соединение не установлено")); }} className="flex items-center gap-2 rounded-lg border border-slate-200 px-3.5 py-2 text-[13px] font-medium hover:bg-slate-50"><Activity className="size-4" />Проверить соединение</button>
-            </div>
-          </Card>
-
-          <Card>
-            <CardHeader title="Переменные окружения" action={<Badge tone="gray">Vercel</Badge>} />
-            <div className="divide-y divide-slate-100">
-              {["TELEGRAM_BOT_TOKEN", "BIND_CODE", "UPSTASH_REDIS_REST_URL", "UPSTASH_REDIS_REST_TOKEN"].map((v) => (
-                <div key={v} className="flex items-center justify-between px-5 py-3">
-                  <span className="font-mono text-[12.5px] font-medium">{v}</span>
-                  <Badge tone="green">Задана</Badge>
-                </div>
-              ))}
-            </div>
-          </Card>
+    <div className="space-y-4">
+      <Card>
+        <CardHeader title="Состояние" action={
+          <Button variant="secondary" size="sm" icon={<Activity className="size-4" />}
+            onClick={() => { void check().then((ms) => toast(ms != null ? `Бот отвечает · ${ms} мс` : "Бот не отвечает — проверьте деплой")); }}>
+            Проверить
+          </Button>
+        } />
+        <div className="divide-y divide-slate-100">
+          <Row ok={loading ? null : !!ping?.ok} title={ping?.ok ? `Бот ${ping.bot} работает` : failed ? "Бот не отвечает" : "Проверяем бота…"}
+            hint={failed ? "Сервер не ответил. Проверьте последний деплой в Vercel." : ping ? `Задач, созданных через систему: ${ping.tasks}` : undefined} />
+          <Row ok={loading ? null : !!ping?.group} title={ping?.group ? "Группа бухгалтеров привязана" : "Группа бухгалтеров не привязана"}
+            hint={ping && !ping.group ? "Без группы карточки заявок и разборы ИИ никуда не приходят — привяжите её по шагам ниже." : "Сюда приходят карточки заявок, разборы ИИ и напоминания."} />
         </div>
-      </div>
-      <p className="flex items-center gap-2 text-xs text-slate-400"><Send className="size-3.5" />Бот работает в репозитории finpulse-crm — API переедет сюда на этапе подключения БД.</p>
+      </Card>
+
+      <Card>
+        <CardHeader title="Как привязать группу бухгалтеров" />
+        <ol className="space-y-2.5 px-5 py-4 text-[14px] text-slate-700">
+          <li><b>1.</b> Добавьте бота {ping?.bot || "@finpulse_crm_bot"} в группу бухгалтеров и сделайте администратором.</li>
+          <li><b>2.</b> В BotFather выключите privacy mode (<code className="rounded bg-slate-100 px-1">/setprivacy → Disable</code>) — иначе бот не услышит «Бот, …».</li>
+          <li><b>3.</b> Напишите в группе <code className="rounded bg-slate-100 px-1">/bind КОД</code>. Код — переменная <code className="rounded bg-slate-100 px-1">BIND_CODE</code> в Vercel; у администратора проекта.</li>
+          <li><b>4.</b> Нажмите «Проверить» выше — строка «Группа привязана» станет зелёной.</li>
+        </ol>
+      </Card>
+
+      <Card>
+        <button onClick={() => setDevOpen(!devOpen)} className="flex w-full items-center justify-between px-5 py-4 text-left">
+          <span>
+            <span className="block text-[15px] font-semibold">Для разработчика</span>
+            <span className="text-[13px] text-slate-500">Webhook и где хранятся ключи</span>
+          </span>
+          <ChevronDown className={`size-4 text-slate-400 transition ${devOpen ? "rotate-180" : ""}`} />
+        </button>
+        {devOpen && (
+          <div className="space-y-3 border-t border-slate-100 px-5 py-4 text-[13px] text-slate-600">
+            <div>
+              <div className="mb-1 font-medium text-slate-700">Webhook URL</div>
+              <div className="flex gap-2">
+                <code className="flex-1 truncate rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 font-mono text-[12.5px]">{WEBHOOK}</code>
+                <Button variant="secondary" size="sm" aria-label="Скопировать" icon={<Copy className="size-4" />}
+                  onClick={() => { void navigator.clipboard?.writeText(WEBHOOK).then(() => toast("Скопировано")); }} />
+              </div>
+            </div>
+            <p>
+              Токен бота, код привязки группы и ключи базы Redis задаются только в Vercel → Environment Variables
+              (<code>TELEGRAM_BOT_TOKEN</code>, <code>BIND_CODE</code>, <code>UPSTASH_REDIS_REST_URL</code>, <code>UPSTASH_REDIS_REST_TOKEN</code>)
+              и в интерфейсе не показываются. После изменения нужен повторный деплой.
+            </p>
+            <Badge tone={ping?.ok ? "green" : "gray"}>{ping?.ok ? "База данных доступна" : "Состояние базы неизвестно"}</Badge>
+          </div>
+        )}
+      </Card>
     </div>
   );
 }

@@ -15,7 +15,7 @@ const AUTONOMY: { key: keyof AiSettings; icon: typeof Zap; title: string; desc: 
   desc: "Как только приходит новая заявка (из бота или CRM), ИИ сам берёт её в работу: готовит черновик и создаёт непроведённый документ в 1С. Если не уверен — задаёт уточняющий вопрос реплаем в группе бухгалтеров и ждёт ответа. Обо всём отчитывается в группе и в чате задачи.",
 };
 
-export default function IntegrationAI() {
+export default function IntegrationAI({ embedded = false }: { embedded?: boolean } = {}) {
   const [ping, setPing] = useState<{ ok: boolean; key: boolean; model: string; error?: string } | null>(null);
   const [settings, setSettings] = useState<AiSettings | null>(null);
   const [testing, setTesting] = useState(false);
@@ -55,10 +55,10 @@ export default function IntegrationAI() {
 
   return (
     <div className="space-y-5">
-      <div>
+      {!embedded && (<div>
         <h1 className="text-2xl font-bold tracking-tight">AI-интеграция</h1>
         <p className="mt-0.5 text-sm text-slate-500">Автоматизация бухгалтерских операций до этапа отправки — ИИ готовит, бухгалтер проводит</p>
-      </div>
+      </div>)}
 
       <Card>
         <CardHeader title="Подключение" action={

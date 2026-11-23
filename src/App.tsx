@@ -12,11 +12,7 @@ import Clients from "./pages/Clients";
 import Calendar from "./pages/Calendar";
 import Employees from "./pages/Employees";
 import Analytics from "./pages/Analytics";
-import Settings from "./pages/Settings";
-import Dictionaries from "./pages/Dictionaries";
-import Integrations from "./pages/Integrations";
-import Integration1C from "./pages/Integration1C";
-import IntegrationAI from "./pages/IntegrationAI";
+import SettingsHub from "./pages/SettingsHub";
 import AiChat from "./pages/AiChat";
 
 export default function App() {
@@ -43,13 +39,15 @@ export default function App() {
             <Route path="/analytics" element={<Analytics />} />
             <Route element={<RequireAdminArea />}>
               <Route path="/employees" element={<Employees />} />
-              <Route path="/settings" element={<Settings />} />
-              <Route path="/dictionaries" element={<Dictionaries />} />
+              <Route path="/settings" element={<Navigate to="/settings/telegram" replace />} />
+              <Route path="/settings/:group" element={<SettingsHub />} />
+              {/* старые адреса (закладки, видеогайд) → новые разделы настроек */}
+              <Route path="/dictionaries" element={<Navigate to="/settings/tasks" replace />} />
+              <Route path="/integrations" element={<Navigate to="/settings/telegram" replace />} />
+              <Route path="/integrations/1c" element={<Navigate to="/settings/1c" replace />} />
+              <Route path="/integrations/ai" element={<Navigate to="/settings/ai" replace />} />
+              <Route path="/ai-chat" element={<AiChat />} />
             </Route>
-            <Route path="/integrations" element={<Integrations />} />
-            <Route path="/integrations/1c" element={<Integration1C />} />
-            <Route path="/integrations/ai" element={<IntegrationAI />} />
-            <Route path="/ai-chat" element={<AiChat />} />
           </Route>
         </Route>
       </Route>

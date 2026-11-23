@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { Activity, ArrowLeftRight, CheckCircle2, CloudOff, Database, RefreshCw, RefreshCwOff } from "lucide-react";
-import { Badge, Card, CardHeader, toast } from "../components/ui";
+import { Activity, ArrowLeftRight, CheckCircle2, CloudOff, Database, ChevronDown, RefreshCw, RefreshCwOff } from "lucide-react";
+import { Badge, Card, CardHeader, Menu, MenuItem, toast } from "../components/ui";
 import { cancelAiDoc1c, fetch1cDoclog, fetch1cPing, fetch1cReports, sync1cContracts, sync1cCounterparties, sync1cDepartments, sync1cEmployees, sync1cNomenclature, sync1cOrgs, sync1cPositions, sync1cReports, type App1C, type Doc1cLogItem, type Report1cItem } from "../api";
 
 /* Маппинг реквизитов 1С («Организации», БУ УЗ 3.0) → поля карточки клиента CRM */
@@ -19,7 +19,7 @@ const FIELD_MAP: [string, string][] = [
   ["Налоговая инспекция", "taxOffice"],
 ];
 
-export default function Integration1C() {
+export default function Integration1C({ embedded = false }: { embedded?: boolean } = {}) {
   const [apps, setApps] = useState<App1C[] | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -107,7 +107,7 @@ export default function Integration1C() {
         try { await sync1cDepartments(a.code); } catch { /* noop */ }
         if (baseFailed) failed++; else ok++;
       }
-      toast(`Синк всех баз (организации, контрагенты, номенклатура, сотрудники, должности): ${ok} успешно${failed ? `, ${failed} с ошибкой` : ""} · новых карточек ${created}, обновлено ${updated}`);
+      toast(`Обновление всех баз (организации, контрагенты, номенклатура, сотрудники, должности): ${ok} успешно${failed ? `, ${failed} с ошибкой` : ""} · новых карточек ${created}, обновлено ${updated}`);
     } finally { setSyncing(null); setSyncingAll(false); }
   };
 
@@ -115,10 +115,10 @@ export default function Integration1C() {
 
   return (
     <div className="space-y-5">
-      <div>
+      {!embedded && (<div>
         <h1 className="text-2xl font-bold tracking-tight">Интеграция с 1С</h1>
         <p className="mt-0.5 text-sm text-slate-500">Clobus.uz (1С:Фреш) · Бухгалтерия для Узбекистана 3.0 · абонент 6366</p>
-      </div>
+      </div>)}
 
       {err && (
         <Card className="border-amber-200 bg-amber-50/50 p-4">
@@ -140,7 +140,7 @@ export default function Integration1C() {
             <button onClick={doSyncAll} disabled={!readyCount || syncingAll || !!syncing}
               className="flex items-center gap-1.5 rounded-lg border border-brand-200 bg-brand-50 px-3 py-1.5 text-[12.5px] font-medium text-brand-700 hover:bg-brand-100 disabled:opacity-40">
               {syncingAll ? <RefreshCwOff className="size-3.5 animate-spin" /> : <RefreshCw className="size-3.5" />}
-              {syncingAll ? "Синхронизация всех…" : "Синк всего из 1С"}
+              {syncingAll ? "Обновляем все базы…" : "Обновить все базы"}
             </button>
             <button onClick={load} disabled={loading}
               className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-[12.5px] font-medium hover:bg-slate-50 disabled:opacity-50">
@@ -175,32 +175,19 @@ export default function Integration1C() {
                   </td>
                   <td className="px-4 py-3 text-slate-500">{a.entities ?? "—"}</td>
                   <td className="px-4 py-3 text-right">
-                    <div className="flex flex-wrap justify-end gap-1.5">
-                      <button
-                        onClick={() => doSync(a)}
-                        disabled={!a.ready || syncing === a.code}
-                        className="rounded-lg border border-slate-200 px-3 py-1.5 text-[12.5px] font-medium hover:bg-slate-50 disabled:opacity-40">
-                        {syncing === a.code ? "…" : "Синк организаций"}
+                    <Menu trigger={
+                      <button disabled={!a.ready || syncing === a.code}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-[13px] font-medium hover:bg-slate-50 disabled:opacity-40">
+                        {syncing === a.code ? <RefreshCw className="size-3.5 animate-spin" /> : <RefreshCw className="size-3.5" />}
+                        {syncing === a.code ? "Загружаем…" : "Обновить из 1С"}
+                        <ChevronDown className="size-3.5" />
                       </button>
-                      <button
-                        onClick={() => doSyncCp(a)}
-                        disabled={!a.ready || syncing === a.code}
-                        className="rounded-lg border border-slate-200 px-3 py-1.5 text-[12.5px] font-medium hover:bg-slate-50 disabled:opacity-40">
-                        {syncing === a.code ? "…" : "Синк контрагентов"}
-                      </button>
-                      <button
-                        onClick={() => doSyncNom(a)}
-                        disabled={!a.ready || syncing === a.code}
-                        className="rounded-lg border border-slate-200 px-3 py-1.5 text-[12.5px] font-medium hover:bg-slate-50 disabled:opacity-40">
-                        {syncing === a.code ? "…" : "Синк номенклатуры"}
-                      </button>
-                      <button
-                        onClick={() => doSyncReports(a)}
-                        disabled={!a.ready || syncing === a.code}
-                        className="rounded-lg border border-slate-200 px-3 py-1.5 text-[12.5px] font-medium hover:bg-slate-50 disabled:opacity-40">
-                        {syncing === a.code ? "…" : "Синк отчётности"}
-                      </button>
-                    </div>
+                    }>
+                      <MenuItem onClick={() => { if (a.ready) void doSync(a); }}>Организации и реквизиты</MenuItem>
+                      <MenuItem onClick={() => { if (a.ready) void doSyncCp(a); }}>Контрагенты и договоры</MenuItem>
+                      <MenuItem onClick={() => { if (a.ready) void doSyncNom(a); }}>Номенклатура</MenuItem>
+                      <MenuItem onClick={() => { if (a.ready) void doSyncReports(a); }}>Отчётность</MenuItem>
+                    </Menu>
                   </td>
                 </tr>
               ))}
@@ -291,7 +278,7 @@ export default function Integration1C() {
             </table>
           </div>
         ) : (
-          <div className="p-8 text-center text-sm text-slate-400">Пока нет данных — нажмите «Синк отчётности» у нужной базы выше</div>
+          <div className="p-8 text-center text-sm text-slate-400">Пока нет данных — нажмите «Обновить из 1С → Отчётность» у нужной базы выше</div>
         )}
         <div className="flex items-start gap-2.5 border-t border-slate-100 px-5 py-3.5 text-[12.5px] text-slate-500">
           <CloudOff className="mt-0.5 size-4 shrink-0 text-slate-400" />

@@ -284,7 +284,7 @@ export default function Calendar() {
                         <ExternalLink className="size-3.5" />Открыть задачу
                       </button>
                     ) : e.type === "report" ? (
-                      <button onClick={() => { setDay(null); navigate("/integrations/1c"); }}
+                      <button onClick={() => { setDay(null); navigate("/settings/1c"); }}
                         className="flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium hover:bg-slate-50">
                         <ExternalLink className="size-3.5" />В разделе «1С»
                       </button>

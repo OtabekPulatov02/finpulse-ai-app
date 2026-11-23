@@ -1,7 +1,7 @@
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
   AlertCircle, BarChart3, Bell, Building2, CalendarDays, CheckCheck, ChevronDown,
-  LayoutDashboard, ListTodo, LogOut, Menu as MenuIcon, Search, Send, Settings, User, Users, X, Database, Sparkles, BotMessageSquare, BookOpen,
+  LayoutDashboard, ListTodo, LogOut, Menu as MenuIcon, Search, Send, Settings, User, Users, X, BotMessageSquare,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Avatar, Menu, MenuDivider, MenuItem, Toaster, toast } from "./ui";
@@ -20,8 +20,7 @@ const ALL_NAV = [
   { to: "/clients", label: "Клиенты", icon: Building2, hideFor: ["client"] as string[] },
   { to: "/employees", label: "Сотрудники", icon: Users, hideFor: ["accountant", "guest", "client"] },
   { to: "/analytics", label: "Аналитика", icon: BarChart3, hideFor: ["client"] as string[] },
-  { to: "/dictionaries", label: "Справочники", icon: BookOpen, hideFor: ["accountant", "guest", "client"] },
-  { to: "/settings", label: "Настройки", icon: Settings, hideFor: ["accountant", "guest", "client"] },
+  { to: "/ai-chat", label: "AI-ассистент", icon: BotMessageSquare, hideFor: ["accountant", "guest", "client"] },
   { to: "/client", label: "Мои задачи", icon: ListTodo, end: true, hideFor: ["admin", "accountant", "guest"] as string[] },
   { to: "/client/profile", label: "Профиль", icon: User, hideFor: ["admin", "accountant", "guest"] as string[] },
 ];
@@ -59,63 +58,19 @@ function SidebarNav({
             )}
           </NavLink>
         ))}
-        {role !== "guest" && role !== "client" && role !== "accountant" && (
-          <>
-            <div className="mt-4 mb-1 px-3 text-[11px] font-semibold tracking-wider text-slate-400 uppercase">
-              Интеграции
-            </div>
-            <NavLink
-              to="/integrations"
-              end
-              onClick={onNavigate}
-              className={({ isActive }) =>
-                `flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                  isActive ? "bg-brand-50 text-brand-600" : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-                }`
-              }
-            >
-              <Send className="size-[18px]" />
-              Telegram
-            </NavLink>
-            <NavLink
-              to="/integrations/1c"
-              onClick={onNavigate}
-              className={({ isActive }) =>
-                `flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                  isActive ? "bg-brand-50 text-brand-600" : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-                }`
-              }
-            >
-              <Database className="size-[18px]" />
-              1С
-            </NavLink>
-            <NavLink
-              to="/integrations/ai"
-              onClick={onNavigate}
-              className={({ isActive }) =>
-                `flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                  isActive ? "bg-brand-50 text-brand-600" : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-                }`
-              }
-            >
-              <Sparkles className="size-[18px]" />
-              AI
-            </NavLink>
-            {role === "admin" && (
-              <NavLink
-                to="/ai-chat"
-                onClick={onNavigate}
-                className={({ isActive }) =>
-                  `flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                    isActive ? "bg-violet-50 text-violet-700" : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-                  }`
-                }
-              >
-                <BotMessageSquare className="size-[18px]" />
-                AI-чат
-              </NavLink>
-            )}
-          </>
+        {role === "admin" && (
+          <NavLink
+            to="/settings"
+            onClick={onNavigate}
+            className={({ isActive }) =>
+              `mt-auto flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                isActive ? "bg-brand-50 text-brand-600" : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+              }`
+            }
+          >
+            <Settings className="size-[18px]" />
+            Настройки
+          </NavLink>
         )}
       </nav>
       <div className="border-t border-slate-200 p-3">
@@ -240,7 +195,7 @@ export default function Layout() {
           >
             <MenuIcon className="size-5" />
           </button>
-          <div className="relative w-full max-w-sm">
+          <div className={`relative w-full max-w-sm ${session?.role === "client" ? "invisible" : ""}`}>
             <Search className="absolute top-1/2 left-3 z-10 size-4 -translate-y-1/2 text-slate-400" />
             <input
               value={searchQ}

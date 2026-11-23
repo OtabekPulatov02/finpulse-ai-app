@@ -2,11 +2,11 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import {
   Archive, Calendar, Check, Copy, ExternalLink, Hash, Kanban, LayoutList, MoreHorizontal,
-  Paperclip, Pencil, Plus, RotateCcw, Search, Send, Trash2, X,
+  Paperclip, Pencil, Plus, RotateCcw, Search, Send, Sparkles, Trash2, X,
 } from "lucide-react";
 import {
   Avatar, Badge, Card, ConfirmModal, Field, Input, Menu, MenuDivider,
-  MenuItem, Modal, Select, Textarea, toast,
+  MenuItem, Modal, Select, Textarea, toast, useUrlParam,
 } from "../components/ui";
 import {
   EDITABLE_STATUSES, PRIORITIES, STATUSES,
@@ -17,6 +17,7 @@ import { hydrateClients, useClients } from "../store/clients";
 import { hydrateEmployees, useEmployees } from "../store/employees";
 import { attachTaskFileRequest, fetchLogs, fmtTs } from "../api";
 import { previewFile } from "../components/FilePreview";
+import { useSession } from "../auth";
 import { mapLog, type LogView } from "../lib/logs";
 import { formatSumsInText } from "../lib/amount";
 
@@ -266,24 +267,28 @@ function TaskChat({ task }: { task: Task }) {
             Здесь пока пусто — оставьте комментарий, вложение или заметку по задаче.
           </p>
         )}
-        {thread.map((m) => (
+        {thread.map((m) => {
+          /* сообщения ИИ — свой цвет и значок, чтобы не путать с бухгалтером */
+          const ai = /^(AI|ИИ)[-\s]/i.test(m.by || "") || /^🤖/.test(m.text || "");
+          return (
           <div key={m.id} className={`flex ${m.from === "staff" ? "justify-end" : "justify-start"}`}>
             <div className={`max-w-[80%] rounded-xl px-3 py-2 text-[13px] leading-snug ${
-              m.from === "staff" ? "bg-brand-600 text-white" : "border border-slate-200 bg-white text-slate-700"}`}>
-              <div className={`mb-0.5 text-[11px] font-semibold ${m.from === "staff" ? "text-brand-100" : "text-slate-400"}`}>{m.by}</div>
+              ai ? "border border-violet-200 bg-violet-50 text-slate-800" : m.from === "staff" ? "bg-brand-600 text-white" : "border border-slate-200 bg-white text-slate-700"}`}>
+              <div className={`mb-0.5 flex items-center gap-1 text-[11px] font-semibold ${ai ? "text-violet-600" : m.from === "staff" ? "text-brand-100" : "text-slate-400"}`}>{ai && <Sparkles className="size-3" />}{m.by}</div>
               {m.text && <div className="whitespace-pre-wrap">{m.text}</div>}
               {m.fileIndex != null && (
                 <button type="button"
                   onClick={() => previewFile(task.id, m.fileIndex as number, `Вложение к задаче №${task.id}`)}
                   className={`mt-1.5 flex items-center gap-1.5 rounded-md px-2 py-1 text-[12px] font-medium ${
-                    m.from === "staff" ? "bg-white/15 hover:bg-white/25" : "bg-slate-100 hover:bg-slate-200"}`}>
+                    m.from === "staff" && !ai ? "bg-white/15 hover:bg-white/25" : "bg-slate-100 hover:bg-slate-200"}`}>
                   <Paperclip className="size-3.5" /> Вложение
                 </button>
               )}
-              <div className={`mt-1 text-right text-[10px] ${m.from === "staff" ? "text-brand-100/80" : "text-slate-400"}`}>{fmtTs(m.at)}</div>
+              <div className={`mt-1 text-right text-[10px] ${m.from === "staff" && !ai ? "text-brand-100/80" : "text-slate-400"}`}>{fmtTs(m.at)}</div>
             </div>
           </div>
-        ))}
+          );
+        })}
         <div ref={bottomRef} />
       </div>
       {file && (
@@ -458,13 +463,14 @@ export function TaskDetailActions({
           <RotateCcw className="size-4" /> Возобновить
         </button>
       )}
-      <button onClick={() => onDelete(task)}
-        className="flex items-center gap-1.5 rounded-lg border border-red-200 px-3.5 py-2 text-[13px] font-medium text-red-600 hover:bg-red-50">
-        <Trash2 className="size-4" /> Удалить
-      </button>
       <button onClick={() => onEdit(task)}
         className="flex items-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2 text-[13px] font-medium text-white hover:bg-brand-700">
         <Pencil className="size-4" /> Изменить
+      </button>
+      {/* удаление — отдельно и тише, чтобы не промахнуться мимо «Изменить» */}
+      <button onClick={() => onDelete(task)} title="Удалить задачу" aria-label="Удалить задачу"
+        className="ml-2 flex items-center rounded-lg p-2 text-slate-400 hover:bg-red-50 hover:text-red-600">
+        <Trash2 className="size-4" />
       </button>
     </>
   );
@@ -492,16 +498,22 @@ function TaskViewModal({
 /* ---------------- Страница ---------------- */
 
 export default function Tasks() {
-  const tasks = useTasks();
+  const allTasks = useTasks();
+  const session = useSession();
+  /* Вид и фильтр «Мои» — в адресе: переживают обновление страницы.
+     Бухгалтер по умолчанию видит свои задачи (UX-аудит 23.11.2026). */
+  const [mine, setMine] = useUrlParam<"1" | "0">("mine", session?.role === "accountant" ? "1" : "0", ["1", "0"]);
+  const myName = session?.name || "";
+  const tasks = useMemo(() => (mine === "1" && myName ? allTasks.filter((t) => t.assignee === myName) : allTasks), [allTasks, mine, myName]);
   const employeesForFilter = useEmployees();
   useEffect(() => { void hydrateEmployees(); }, []);
-  const [view, setView] = useState<"kanban" | "table">("kanban");
+  const [view, setView] = useUrlParam<"kanban" | "table">("view", "kanban", ["kanban", "table"]);
 
   const [viewTaskId, setViewTaskId] = useState<number | null>(null);
   /* Берём саму задачу из живого стора по id, а не храним снимок объекта —
      иначе после отправки сообщения в чат (или любого другого обновления
      задачи) открытая модалка продолжала бы показывать устаревшую ленту. */
-  const viewTask = viewTaskId != null ? (tasks.find((t) => t.id === viewTaskId) ?? null) : null;
+  const viewTask = viewTaskId != null ? (allTasks.find((t) => t.id === viewTaskId) ?? null) : null;
   const setViewTask = (t: Task | null) => setViewTaskId(t ? t.id : null);
   const [editTask, setEditTask] = useState<Task | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
@@ -514,10 +526,10 @@ export default function Tasks() {
   useEffect(() => {
     const openId = searchParams.get("open");
     if (!openId || !tasks.length) return;
-    const t = tasks.find((t) => t.id === Number(openId));
+    const t = allTasks.find((t) => t.id === Number(openId));
     if (t) setViewTaskId(t.id);
     setSearchParams((p) => { p.delete("open"); return p; }, { replace: true });
-  }, [searchParams, tasks, setSearchParams]);
+  }, [searchParams, allTasks, setSearchParams]);
 
   const openCreate = (status: TaskStatus = "Новая") => {
     setCreateStatus(status); setFormKey((k) => k + 1); setCreateOpen(true);
@@ -563,7 +575,15 @@ export default function Tasks() {
           <h1 className="text-2xl font-bold tracking-tight">Задачи</h1>
           <p className="mt-0.5 text-sm text-slate-500">{active} активных · {overdue} просроченных · {done} выполнено</p>
         </div>
-        <div className="flex items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2.5">
+          <div className="flex rounded-lg border border-slate-200 bg-slate-50 p-0.5">
+            {([["1", "Мои"], ["0", "Все"]] as const).map(([v, label]) => (
+              <button key={v} onClick={() => setMine(v)} title={v === "1" ? `Задачи, где исполнитель — ${myName}` : "Задачи всей команды"}
+                className={`rounded-md px-3 py-1.5 text-[13px] font-medium transition ${mine === v ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>
+                {label}
+              </button>
+            ))}
+          </div>
           <div className="flex rounded-lg border border-slate-200 bg-slate-50 p-0.5">
             {([["kanban", "Канбан", Kanban], ["table", "Таблица", LayoutList]] as const).map(([v, label, Icon]) => (
               <button key={v} onClick={() => setView(v)}

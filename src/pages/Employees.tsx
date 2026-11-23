@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { Copy, KeyRound, MoreHorizontal, Pencil, Trash2, UserPlus } from "lucide-react";
+import { Copy, KeyRound, MoreHorizontal, Pencil, Power, Search, Trash2, UserPlus } from "lucide-react";
 import {
-  Avatar, Badge, Card, ConfirmModal, Field, Input, Menu, MenuDivider, MenuItem, Modal, Select, toast,
+  Avatar, Badge, Button, Card, ConfirmModal, EmptyState, Field, Input, Menu, MenuDivider, MenuItem, Modal, PageHeader, Select, toast,
 } from "../components/ui";
 import type { CrmEmployee } from "../api";
 import {
@@ -12,6 +12,7 @@ import { hydrateFromBot, useTasks } from "../store/tasks";
 import { formatPhone } from "../lib/phone";
 
 const ROLE_LABEL: Record<string, string> = { admin: "Администратор", accountant: "Бухгалтер" };
+type SortKey = "name" | "phone" | "role" | "clients" | "active" | "done" | "status" | "-name" | "-phone" | "-role" | "-clients" | "-active" | "-done" | "-status";
 
 function PasswordRevealModal({ password, onClose }: { password: string | null; onClose: () => void }) {
   if (!password) return null;
@@ -131,75 +132,103 @@ export default function Employees() {
 
   const activeCount = employees.filter((e) => e.active).length;
 
+  /* Таблица в одном стиле с «Клиентами»: поиск и сортировка по любой колонке */
+  const [q, setQ] = useState("");
+  const [sort, setSort] = useState<SortKey>("name");
+  const rows = useMemo(() => {
+    const ql = q.trim().toLowerCase();
+    const list = employees
+      .filter((e) => !ql || `${e.name} ${e.phone ?? ""}`.toLowerCase().includes(ql))
+      .map((e) => ({ e, s: stats.get(e.name) || { clients: 0, active: 0, done: 0 } }));
+    const key = sort.replace("-", "") as Exclude<SortKey, `-${string}`>;
+    const dir = sort.startsWith("-") ? -1 : 1;
+    const val = (r: (typeof list)[number]): string | number =>
+      key === "name" ? r.e.name : key === "phone" ? (r.e.phone ?? "") : key === "role" ? r.e.role : key === "status" ? Number(r.e.active) : r.s[key];
+    return list.sort((a, b) => { const x = val(a), y = val(b); return (x < y ? -1 : x > y ? 1 : 0) * dir; });
+  }, [employees, stats, q, sort]);
+
   return (
     <div className="space-y-5">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Сотрудники</h1>
-          <p className="mt-0.5 text-sm text-slate-500">{employees.length} сотрудников · {activeCount} активны</p>
-        </div>
-        <button onClick={() => setCreateOpen(true)}
-          className="flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-brand-700">
-          <UserPlus className="size-4" /> Добавить сотрудника
-        </button>
-      </div>
+      <PageHeader
+        title="Сотрудники"
+        subtitle={`${employees.length} в команде · ${activeCount} с доступом`}
+        actions={<Button onClick={() => setCreateOpen(true)} icon={<UserPlus className="size-4" />}>Добавить сотрудника</Button>}
+      />
 
-      <div className="grid grid-cols-3 gap-4 max-xl:grid-cols-2 max-md:grid-cols-1">
-        {employees.map((e) => {
-          const s = stats.get(e.name) || { clients: 0, active: 0, done: 0 };
-          return (
-            <Card key={e.id} className="p-5">
-              <div className="flex items-start gap-3">
-                <Avatar name={e.name} className="!size-11 !text-sm" />
-                <div className="min-w-0 flex-1">
-                  <div className="truncate text-[14px] font-semibold">{e.name}</div>
-                  <div className="truncate text-xs text-slate-400">{ROLE_LABEL[e.role] ?? e.role}</div>
-                  <div className="mt-1 text-xs text-slate-400">{e.phone ? formatPhone(e.phone) : "—"}</div>
-                </div>
-                <div className="flex shrink-0 items-center gap-1.5">
-                  <Badge tone={e.active ? "green" : "gray"}>{e.active ? "Активен" : "Отключён"}</Badge>
-                  <Menu trigger={
-                    <button className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700">
-                      <MoreHorizontal className="size-4" />
-                    </button>
-                  }>
-                    <MenuItem icon={<Pencil className="size-4" />} onClick={() => setEditEmployee(e)}>Изменить</MenuItem>
-                    <MenuItem
-                      icon={<KeyRound className="size-4" />}
-                      onClick={async () => {
-                        const r = await resetEmployeePassword(e.id);
-                        if (r.ok && r.password) setRevealPassword(r.password);
-                        else toast(r.error || "Не удалось сбросить пароль");
-                      }}>
-                      Сбросить пароль
-                    </MenuItem>
-                    <MenuItem
-                      icon={<Pencil className="size-4" />}
-                      onClick={async () => {
-                        const r = await patchEmployee(e.id, { active: !e.active });
-                        toast(r.ok ? (e.active ? "Доступ отключён" : "Доступ включён") : (r.error || "Не удалось изменить"));
-                      }}>
-                      {e.active ? "Отключить доступ" : "Включить доступ"}
-                    </MenuItem>
-                    <MenuDivider />
-                    <MenuItem danger icon={<Trash2 className="size-4" />} onClick={() => setDeleteEmployee(e)}>Удалить</MenuItem>
-                  </Menu>
-                </div>
-              </div>
-              <div className="mt-4 grid grid-cols-3 border-t border-slate-100 pt-3.5 text-center">
-                <div><div className="text-base font-bold">{s.clients}</div><div className="text-[11px] text-slate-400">Клиенты</div></div>
-                <div><div className="text-base font-bold">{s.active}</div><div className="text-[11px] text-slate-400">Активные</div></div>
-                <div><div className="text-base font-bold">{s.done}</div><div className="text-[11px] text-slate-400">Выполнено</div></div>
-              </div>
-            </Card>
-          );
-        })}
-        {!employees.length && (
-          <div className="col-span-full rounded-xl border border-dashed border-slate-200 p-10 text-center text-sm text-slate-400">
-            Сотрудников пока нет — добавьте первого.
+      <Card>
+        <div className="flex flex-wrap items-center gap-3 border-b border-slate-200 p-4">
+          <div className="relative min-w-56 flex-1">
+            <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400" />
+            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Поиск по имени или телефону"
+              className="w-full rounded-lg border border-slate-200 py-2 pr-3 pl-9 text-[13.5px] focus:border-brand-500 focus:ring-2 focus:ring-brand-100 focus:outline-none" />
           </div>
+          <span className="text-[12.5px] text-slate-400">Нажмите на заголовок колонки, чтобы отсортировать</span>
+        </div>
+        {rows.length ? (
+          <div className="overflow-x-auto">
+            <table className="w-full text-[13.5px]">
+              <thead>
+                <tr className="border-b border-slate-200 bg-slate-50 text-left text-xs font-semibold tracking-wider text-slate-400 uppercase">
+                  {([["name", "Сотрудник"], ["phone", "Телефон (логин)"], ["role", "Роль"], ["clients", "Клиенты"], ["active", "В работе"], ["done", "Выполнено"], ["status", "Доступ"]] as const).map(([k, l]) => (
+                    <th key={k} className={`px-4 py-3 ${["clients", "active", "done"].includes(k) ? "text-right" : ""}`}>
+                      <button onClick={() => setSort(sort === k ? (`-${k}` as SortKey) : (k as SortKey))} className="inline-flex items-center gap-1 uppercase hover:text-slate-600">
+                        {l}{sort.replace("-", "") === k && <span>{sort.startsWith("-") ? "↓" : "↑"}</span>}
+                      </button>
+                    </th>
+                  ))}
+                  <th className="w-10 px-4 py-3" />
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {rows.map(({ e, s }) => (
+                  <tr key={e.id} className="hover:bg-slate-50">
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2.5"><Avatar name={e.name} /><span className="font-medium">{e.name}</span></div>
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-slate-600">{e.phone ? formatPhone(e.phone) : "—"}</td>
+                    <td className="px-4 py-3"><Badge tone={e.role === "admin" ? "purple" : "blue"}>{ROLE_LABEL[e.role] ?? e.role}</Badge></td>
+                    <td className="px-4 py-3 text-right tabular-nums">{s.clients}</td>
+                    <td className="px-4 py-3 text-right tabular-nums">{s.active}</td>
+                    <td className="px-4 py-3 text-right tabular-nums">{s.done}</td>
+                    <td className="px-4 py-3"><Badge tone={e.active ? "green" : "gray"}>{e.active ? "Активен" : "Отключён"}</Badge></td>
+                    <td className="px-4 py-3 text-right">
+                      <Menu trigger={
+                        <button className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700" aria-label="Действия">
+                          <MoreHorizontal className="size-4" />
+                        </button>
+                      }>
+                        <MenuItem icon={<Pencil className="size-4" />} onClick={() => setEditEmployee(e)}>Изменить</MenuItem>
+                        <MenuItem
+                          icon={<KeyRound className="size-4" />}
+                          onClick={async () => {
+                            const r = await resetEmployeePassword(e.id);
+                            if (r.ok && r.password) setRevealPassword(r.password);
+                            else toast(r.error || "Не удалось сбросить пароль");
+                          }}>
+                          Сбросить пароль
+                        </MenuItem>
+                        <MenuItem
+                          icon={<Power className="size-4" />}
+                          onClick={async () => {
+                            const r = await patchEmployee(e.id, { active: !e.active });
+                            toast(r.ok ? (e.active ? "Доступ отключён" : "Доступ включён") : (r.error || "Не удалось изменить"));
+                          }}>
+                          {e.active ? "Отключить доступ" : "Включить доступ"}
+                        </MenuItem>
+                        <MenuDivider />
+                        <MenuItem danger icon={<Trash2 className="size-4" />} onClick={() => setDeleteEmployee(e)}>Удалить</MenuItem>
+                      </Menu>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <EmptyState icon={<UserPlus className="size-5" />} title={employees.length ? "Никого не нашлось" : "Сотрудников пока нет"}
+            hint={employees.length ? "Измените запрос поиска." : "Добавьте первого — система создаст пароль и покажет его один раз."} />
         )}
-      </div>
+      </Card>
 
       <EmployeeFormModal open={createOpen} onClose={() => setCreateOpen(false)} onCreated={(p) => setRevealPassword(p)} />
       {editEmployee && (

@@ -92,7 +92,7 @@ function EditableListCard({
 }
 
 /* ---------------- Задачи: категории/подкатегории бота + статусы/приоритеты (справочно) ---------------- */
-function TasksDicts() {
+export function TasksDicts({ only }: { only?: "cats" | "statuses" } = {}) {
   const [cats, setCats] = useState<BotCategory[] | null>(null);
   const [saving, setSaving] = useState(false);
   useEffect(() => { fetchBotCategories().then((c) => setCats(c ?? [])).catch(() => setCats([])); }, []);
@@ -109,7 +109,7 @@ function TasksDicts() {
 
   return (
     <div className="space-y-4">
-      <Card>
+      {only !== "statuses" && <Card>
         <CardHeader title="Категории и подкатегории заявок (Telegram-бот)" action={
           cats && <button onClick={() => setCats([...cats, { id: "cat" + Date.now().toString(36), name: "Новая категория", subs: [] }])}
             className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-[12.5px] font-medium hover:bg-slate-50">
@@ -142,9 +142,9 @@ function TasksDicts() {
             </div>
           </>
         )}
-      </Card>
+      </Card>}
 
-      <div className="grid grid-cols-2 gap-4 max-lg:grid-cols-1">
+      {only !== "cats" && <div className="grid grid-cols-2 gap-4 max-lg:grid-cols-1">
         <Card>
           <CardHeader title="Статусы задач" />
           <div className="divide-y divide-slate-100">
@@ -166,13 +166,13 @@ function TasksDicts() {
           </div>
           <p className="border-t border-slate-100 px-5 py-2.5 text-xs text-slate-400">Системный список, используется в фильтрах и сортировке задач.</p>
         </Card>
-      </div>
+      </div>}
     </div>
   );
 }
 
 /* ---------------- Клиенты: должности + тарифы ---------------- */
-function ClientsDicts() {
+export function ClientsDicts({ only }: { only?: "positions" | "tariffs" } = {}) {
   const [positions, setPositions] = useState<string[] | null>(null);
   const [tariffs, setTariffs] = useState<Tariff[] | null>(null);
   const [savingTariffs, setSavingTariffs] = useState(false);
@@ -196,15 +196,15 @@ function ClientsDicts() {
 
   return (
     <div className="space-y-4">
-      <EditableListCard
+      {only !== "tariffs" && <EditableListCard
         title="Должности клиентов"
         hint="Показываются табами при регистрации в боте и в карточке клиента."
         items={positions ?? []}
         placeholder="Новая должность"
         onSave={async (list) => { const r = await saveBotPositions(list); if (!r.ok) throw new Error(r.error); setPositions(list); }}
-      />
+      />}
 
-      <Card>
+      {only !== "positions" && <Card>
         <CardHeader title="Тарифы и лимиты операций" action={
           tariffs && <button onClick={() => setTariffs((r) => [...r!, { id: "t" + Date.now().toString(36), name: "Новый тариф", price: 0, monthlyLimit: 30, overPackOps: 10, overPackPrice: 0 }])}
             className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-[12.5px] font-medium hover:bg-slate-50">
@@ -249,7 +249,7 @@ function ClientsDicts() {
             </div>
           </>
         )}
-      </Card>
+      </Card>}
     </div>
   );
 }
@@ -302,7 +302,7 @@ function ReminderTypeLabelsCard({ dicts, onSaved }: { dicts: Dicts; onSaved: (d:
   );
 }
 
-function CalendarDicts() {
+export function CalendarDicts() {
   const [dicts, setDicts] = useState<Dicts | null>(null);
   useEffect(() => { fetchDicts().then(setDicts).catch(() => setDicts(null)); }, []);
   if (!dicts) return <Card><div className="p-8 text-center text-sm text-slate-400">Загрузка…</div></Card>;
@@ -357,14 +357,14 @@ function CalendarDicts() {
 }
 
 /* ---------------- 1С: синканные подразделения (только чтение) ---------------- */
-function OneCDicts() {
+export function OneCDicts() {
   const [rows, setRows] = useState<DeptSummaryRow[] | null>(null);
   useEffect(() => { fetch1cDeptSummary().then(setRows).catch(() => setRows([])); }, []);
 
   return (
     <Card>
       <CardHeader title="Подразделения организаций (из 1С)" action={
-        <Link to="/integrations/1c" className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-[12.5px] font-medium hover:bg-slate-50">
+        <Link to="/settings/1c" className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-[12.5px] font-medium hover:bg-slate-50">
           <ExternalLink className="size-3.5" /> Синк в разделе «1С»
         </Link>
       } />
@@ -390,7 +390,7 @@ function OneCDicts() {
   );
 }
 
-function KnowledgeBaseDicts() {
+export function KnowledgeBaseDicts() {
   const [docs, setDocs] = useState<RagDoc[] | null>(null);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
@@ -475,7 +475,7 @@ function KnowledgeBaseDicts() {
   );
 }
 
-function DocTemplatesDicts() {
+export function DocTemplatesDicts() {
   const [templates, setTemplates] = useState<DocTemplate[] | null>(null);
   const [name, setName] = useState("");
   const [category, setCategory] = useState("Договоры");

@@ -1,27 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
-import { Bell, Bot as BotIcon, GitBranch, Link2, Plus, ScrollText, Shield, Trash2, UserPlus, Users } from "lucide-react";
-import { Avatar, Badge, Card, CardHeader, Toggle, toast, type Tone } from "../components/ui";
+import { Link2, Plus, Trash2 } from "lucide-react";
+import { Badge, Card, CardHeader, Toggle, toast, type Tone } from "../components/ui";
 import { fetchAssignRules, fetchBotSettings, fetchLogs, fetchLogsArchive, fetchNotifSettings, saveAssignRules, saveBotSettings, saveNotifSettings, type AssignRule, type BotSettings, type NotifSettings } from "../api";
 import { mapLog, type LogView } from "../lib/logs";
-import { hydrateEmployees, useEmployees } from "../store/employees";
-import { formatPhone } from "../lib/phone";
-
-const tabs = [
-  { id: "users", label: "Пользователи", icon: Users },
-  { id: "roles", label: "Роли", icon: Shield },
-  { id: "rules", label: "Распределение", icon: GitBranch },
-  { id: "bot", label: "Бот", icon: BotIcon },
-  { id: "notif", label: "Уведомления", icon: Bell },
-  { id: "logs", label: "Логи системы", icon: ScrollText },
-] as const;
-type TabId = (typeof tabs)[number]["id"];
-
-const ROLE_LABEL: Record<string, string> = { admin: "Администратор", accountant: "Бухгалтер" };
-const ROLE_TONE: Record<string, Tone> = { admin: "purple", accountant: "blue" };
+import { useEmployees } from "../store/employees";
 
 
-function NotifTab() {
+
+export function NotifTab() {
   const [set, setSet] = useState<NotifSettings | null>(null);
   const [saving, setSaving] = useState(false);
   useEffect(() => {
@@ -66,7 +52,7 @@ function NotifTab() {
 }
 
 
-function BotTab() {
+export function BotTab() {
   const [set, setSet] = useState<BotSettings | null>(null);
   const [saving, setSaving] = useState(false);
   useEffect(() => {
@@ -109,7 +95,7 @@ function BotTab() {
           </div>
         </div>
         <div className="flex items-center justify-between border-t border-slate-100 px-5 py-3.5">
-          <span className="flex items-center gap-1.5 text-[12.5px] text-slate-400"><Link2 className="size-3.5" />Категории заявок и должности клиентов — в разделе <Link to="/dictionaries" className="font-medium text-brand-600 hover:underline">«Справочники»</Link></span>
+          <span className="flex items-center gap-1.5 text-[12.5px] text-slate-400"><Link2 className="size-3.5" />Услуги в меню бота и должности клиентов — <a href="#services" className="font-medium text-brand-600 hover:underline">ниже на этой странице</a></span>
           <button onClick={saveAll} disabled={saving}
             className="rounded-lg bg-brand-600 px-4 py-2 text-[13px] font-medium text-white hover:bg-brand-700 disabled:opacity-50">
             {saving ? "Сохранение…" : "Сохранить"}
@@ -123,7 +109,7 @@ function BotTab() {
 const PRIORITY_OPTIONS = ["Низкий", "Средний", "Высокий", "Критический"];
 const SOURCE_LABEL: Record<AssignRule["source"], string> = { any: "Любой", telegram: "Telegram", crm: "CRM" };
 
-function RulesTab() {
+export function RulesTab() {
   const [rules, setRules] = useState<AssignRule[] | null>(null);
   const [saving, setSaving] = useState(false);
   const employees = useEmployees();
@@ -201,16 +187,33 @@ function RulesTab() {
   );
 }
 
-export default function Settings() {
-  const [tab, setTab] = useState<TabId>("users");
+/* Роли — справка: что видит каждая роль (настраиваемых прав пока нет) */
+export function RolesPanel() {
+  return (
+    <div className="grid grid-cols-4 gap-4 max-xl:grid-cols-2 max-sm:grid-cols-1">
+      {[
+        { name: "Администратор", desc: "Полный доступ: сотрудники, все клиенты и задачи, настройки, журнал.", tone: "purple" as Tone },
+        { name: "Бухгалтер", desc: "Клиенты и задачи, назначенные ему в CRM. Без настроек и сотрудников.", tone: "blue" as Tone },
+        { name: "Клиент", desc: "Только свои задачи — через Telegram-бота и личный кабинет.", tone: "cyan" as Tone },
+        { name: "Гость", desc: "Демо-доступ без реальных данных.", tone: "gray" as Tone },
+      ].map((r) => (
+        <Card key={r.name} className="p-5">
+          <Badge tone={r.tone}>{r.name}</Badge>
+          <p className="mt-3 text-[13px] leading-relaxed text-slate-500">{r.desc}</p>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
+/* Журнал действий: события бота и CRM, живые + архив по месяцам */
+export function LogsPanel() {
   const [logFilter, setLogFilter] = useState<"all" | "tg" | "crm">("all");
   const [logPeriod, setLogPeriod] = useState("live");
   const [live, setLive] = useState<LogView[] | null>(null);
   const [logsLoading, setLogsLoading] = useState(false);
-  const employees = useEmployees();
-  useEffect(() => { void hydrateEmployees(); }, []);
   const monthOptions = useMemo(() => {
-    const opts = [{ v: "live", l: "Живые (последние 500)" }];
+    const opts = [{ v: "live", l: "Последние 500" }];
     const d = new Date();
     for (let i = 0; i < 6; i++) {
       const m = new Date(d.getFullYear(), d.getMonth() - i, 1);
@@ -220,7 +223,6 @@ export default function Settings() {
     return opts;
   }, []);
   useEffect(() => {
-    if (tab !== "logs") return;
     setLogsLoading(true);
     setLive(null);
     const fetchers = logPeriod === "live"
@@ -234,128 +236,55 @@ export default function Settings() {
       })
       .catch(() => setLive([]))
       .finally(() => setLogsLoading(false));
-  }, [tab, logPeriod]);
+  }, [logPeriod]);
   const allLogs: LogView[] = live ?? [];
   const shownLogs = allLogs.filter((l) => logFilter === "all" || l.src === logFilter);
-
   return (
-    <div className="space-y-5">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Настройки</h1>
-        <p className="mt-0.5 text-sm text-slate-500">Пользователи, роли, распределение и логи</p>
-      </div>
-
-      <div className="flex gap-1 overflow-x-auto border-b border-slate-200 [scrollbar-width:none]">
-        {tabs.map(({ id, label, icon: Icon }) => (
-          <button key={id} onClick={() => setTab(id)}
-            className={`-mb-px flex shrink-0 items-center gap-2 rounded-t-lg border-b-2 px-3.5 py-2.5 text-[13.5px] font-medium whitespace-nowrap transition ${tab === id ? "border-brand-600 text-brand-600" : "border-transparent text-slate-500 hover:bg-slate-100 hover:text-slate-900"}`}>
-            <Icon className="size-4" />{label}
+        <Card>
+      <div className="flex items-center gap-2 border-b border-slate-200 p-4">
+        {([["all", "Все"], ["tg", "Telegram"], ["crm", "CRM"]] as const).map(([v, l]) => (
+          <button key={v} onClick={() => setLogFilter(v)}
+            className={`rounded-full border px-3 py-1 text-xs font-medium transition ${logFilter === v ? "border-brand-200 bg-brand-50 text-brand-600" : "border-slate-200 text-slate-500 hover:border-slate-300"}`}>
+            {l}
           </button>
         ))}
+        <select value={logPeriod} onChange={(e) => setLogPeriod(e.target.value)}
+          className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium capitalize focus:border-brand-500 focus:outline-none">
+          {monthOptions.map((o) => <option key={o.v} value={o.v}>{o.l}</option>)}
+        </select>
+        <span className="ml-auto flex items-center gap-1.5 text-xs text-slate-400">
+          {allLogs.length > 0 && <span className="size-1.5 animate-pulse rounded-full bg-emerald-500" />}
+          {logsLoading ? "загрузка…" : allLogs.length ? (logPeriod === "live" ? "живые данные · последние 500" : "архив за месяц · до 10 000 записей") : "записей пока нет"}
+        </span>
       </div>
-
-      {tab === "users" && (
-        <Card>
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 p-4">
-            <span className="text-sm font-semibold">{employees.length} {employees.length === 1 ? "сотрудник" : "сотрудника"}</span>
-            <Link to="/employees" className="flex items-center gap-2 rounded-lg bg-brand-600 px-3.5 py-2 text-[13px] font-medium text-white hover:bg-brand-700"><UserPlus className="size-4" />Управлять в разделе «Сотрудники»</Link>
-          </div>
-          {employees.length ? (
-            <div className="overflow-x-auto">
-              <table className="w-full text-[13.5px]">
-                <thead>
-                  <tr className="border-b border-slate-200 bg-slate-50 text-left text-xs font-semibold tracking-wider text-slate-400 uppercase">
-                    <th className="px-5 py-3">Сотрудник</th><th className="px-4 py-3">Телефон (логин)</th><th className="px-4 py-3">Роль</th><th className="px-4 py-3">Статус</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {employees.map((e) => (
-                    <tr key={e.id} className="hover:bg-slate-50">
-                      <td className="px-5 py-3 whitespace-nowrap"><span className="flex items-center gap-2.5 font-medium"><Avatar name={e.name} />{e.name}</span></td>
-                      <td className="px-4 py-3 whitespace-nowrap text-slate-500">{e.phone ? formatPhone(e.phone) : "—"}</td>
-                      <td className="px-4 py-3 whitespace-nowrap"><Badge tone={ROLE_TONE[e.role] ?? "gray"}>{ROLE_LABEL[e.role] ?? e.role}</Badge></td>
-                      <td className="px-4 py-3 whitespace-nowrap">{e.active ? <Badge tone="green">Активен</Badge> : <Badge tone="gray">Отключён</Badge>}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <p className="px-5 py-8 text-center text-sm text-slate-400">Сотрудники ещё не добавлены — создайте первого в разделе «Сотрудники».</p>
-          )}
-        </Card>
-      )}
-
-      {tab === "roles" && (
-        <div className="grid grid-cols-4 gap-4 max-xl:grid-cols-2 max-sm:grid-cols-1">
-          {[
-            { name: "Администратор", desc: "Полный доступ: сотрудники, все клиенты и задачи, настройки, логи.", tone: "purple" as Tone },
-            { name: "Бухгалтер", desc: "Свои клиенты и задачи, назначенные в CRM.", tone: "blue" as Tone },
-            { name: "Клиент", desc: "Доступ только к своим задачам через бота/личный кабинет.", tone: "cyan" as Tone },
-            { name: "Гость", desc: "Демонстрационный доступ без реальных данных.", tone: "gray" as Tone },
-          ].map((r) => (
-            <Card key={r.name} className="p-5">
-              <Badge tone={r.tone}>{r.name}</Badge>
-              <p className="mt-3 text-[13px] leading-relaxed text-slate-500">{r.desc}</p>
-            </Card>
-          ))}
+      {shownLogs.length ? (
+        <div className="overflow-x-auto">
+          <table className="w-full text-[13px]">
+            <thead>
+              <tr className="border-b border-slate-200 bg-slate-50 text-left text-xs font-semibold tracking-wider text-slate-400 uppercase">
+                <th className="px-4 py-3">Время</th><th className="px-4 py-3">Источник</th><th className="px-4 py-3">Событие</th>
+                <th className="px-4 py-3">Кто</th><th className="px-4 py-3">Исполнитель</th><th className="px-4 py-3">Детали</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {shownLogs.map((l, i) => (
+                <tr key={i} className="hover:bg-slate-50">
+                  <td className="px-4 py-2.5 whitespace-nowrap text-slate-400">{l.time}</td>
+                  <td className="px-4 py-2.5"><Badge tone={l.src === "tg" ? "cyan" : "purple"}>{l.src === "tg" ? "Telegram" : "CRM"}</Badge></td>
+                  <td className="px-4 py-2.5 font-medium whitespace-nowrap">{l.event}</td>
+                  <td className="px-4 py-2.5 whitespace-nowrap">{l.who}</td>
+                  <td className="px-4 py-2.5 whitespace-nowrap">{l.assignee}</td>
+                  <td className="px-4 py-2.5 text-slate-500">{l.details}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
+      ) : (
+        <p className="px-5 py-8 text-center text-sm text-slate-400">
+          {logsLoading ? "Загружаем журнал…" : "Событий пока нет — они появятся здесь по мере работы с ботом и CRM."}
+        </p>
       )}
-
-      {tab === "rules" && <RulesTab />}
-
-      {tab === "notif" && <NotifTab />}
-
-      {tab === "bot" && <BotTab />}
-
-      {tab === "logs" && (
-        <Card>
-          <div className="flex items-center gap-2 border-b border-slate-200 p-4">
-            {([["all", "Все"], ["tg", "Telegram"], ["crm", "CRM"]] as const).map(([v, l]) => (
-              <button key={v} onClick={() => setLogFilter(v)}
-                className={`rounded-full border px-3 py-1 text-xs font-medium transition ${logFilter === v ? "border-brand-200 bg-brand-50 text-brand-600" : "border-slate-200 text-slate-500 hover:border-slate-300"}`}>
-                {l}
-              </button>
-            ))}
-            <select value={logPeriod} onChange={(e) => setLogPeriod(e.target.value)}
-              className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium capitalize focus:border-brand-500 focus:outline-none">
-              {monthOptions.map((o) => <option key={o.v} value={o.v}>{o.l}</option>)}
-            </select>
-            <span className="ml-auto flex items-center gap-1.5 text-xs text-slate-400">
-              {allLogs.length > 0 && <span className="size-1.5 animate-pulse rounded-full bg-emerald-500" />}
-              {logsLoading ? "загрузка…" : allLogs.length ? (logPeriod === "live" ? "живые данные · последние 500" : "архив за месяц · до 10 000 записей") : "записей пока нет"}
-            </span>
-          </div>
-          {shownLogs.length ? (
-            <div className="overflow-x-auto">
-              <table className="w-full text-[13px]">
-                <thead>
-                  <tr className="border-b border-slate-200 bg-slate-50 text-left text-xs font-semibold tracking-wider text-slate-400 uppercase">
-                    <th className="px-4 py-3">Время</th><th className="px-4 py-3">Источник</th><th className="px-4 py-3">Событие</th>
-                    <th className="px-4 py-3">Кто</th><th className="px-4 py-3">Исполнитель</th><th className="px-4 py-3">Детали</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {shownLogs.map((l, i) => (
-                    <tr key={i} className="hover:bg-slate-50">
-                      <td className="px-4 py-2.5 whitespace-nowrap text-slate-400">{l.time}</td>
-                      <td className="px-4 py-2.5"><Badge tone={l.src === "tg" ? "cyan" : "purple"}>{l.src === "tg" ? "Telegram" : "CRM"}</Badge></td>
-                      <td className="px-4 py-2.5 font-medium whitespace-nowrap">{l.event}</td>
-                      <td className="px-4 py-2.5 whitespace-nowrap">{l.who}</td>
-                      <td className="px-4 py-2.5 whitespace-nowrap">{l.assignee}</td>
-                      <td className="px-4 py-2.5 text-slate-500">{l.details}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <p className="px-5 py-8 text-center text-sm text-slate-400">
-              {logsLoading ? "Загружаем журнал…" : "Событий пока нет — они появятся здесь по мере работы с ботом и CRM."}
-            </p>
-          )}
-        </Card>
-      )}
-    </div>
+    </Card>
   );
 }
