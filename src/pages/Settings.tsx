@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { ArrowDown, ArrowUp, Link2, Plus, Trash2 } from "lucide-react";
-import { Badge, Card, CardHeader, SaveButton, Toggle, toast, useDirty, type Tone } from "../components/ui";
+import { Badge, Card, CardHeader, FilterChips, SaveButton, Toggle, toast, useDirty, type Tone } from "../components/ui";
 import { fetchAssignRules, fetchBotSettings, fetchLogs, fetchLogsArchive, fetchNotifSettings, saveAssignRules, saveBotSettings, saveNotifSettings, type AssignRule, type BotSettings, type NotifSettings } from "../api";
 import { mapLog, type LogView } from "../lib/logs";
 import { useEmployees } from "../store/employees";
@@ -41,7 +41,7 @@ export function NotifTab() {
       {items.map((i) => (
         <div key={i.key} className="flex items-center justify-between gap-4 px-5 py-4">
           <div>
-            <div className="text-[13.5px] font-medium">{i.title}</div>
+            <div className="text-[13px] font-medium">{i.title}</div>
             <div className="text-xs text-slate-400">{i.desc}</div>
           </div>
           <Toggle checked={set[i.key]} onChange={() => !saving && toggle(i.key)} />
@@ -69,13 +69,12 @@ export function BotTab() {
       else toast(r1.error || "Не удалось сохранить");
     } finally { setSaving(false); }
   };
-  const numInput = "w-20 rounded-lg border border-slate-200 px-2.5 py-1.5 text-center focus:border-brand-500 focus:outline-none";
+  const numInput = "w-20 rounded-lg border px-2.5 py-1.5 text-center focus:border-brand-500 focus:outline-none text-[13px] border-slate-300/80 bg-white shadow-sm focus:ring-3 focus:ring-brand-100";
 
   return (
     <div className="space-y-4">
       <Card>
-        <CardHeader title="Время работы и SLA" />
-        <div className="grid grid-cols-3 gap-6 p-5 text-[13.5px] max-md:grid-cols-1">
+        <div className="grid grid-cols-3 gap-6 p-5 text-[13px] max-md:grid-cols-1">
           <div>
             <div className="mb-1.5 font-medium">Приём заявок, часы (Ташкент)</div>
             <div className="flex items-center gap-2">
@@ -96,7 +95,7 @@ export function BotTab() {
           </div>
         </div>
         <div className="flex items-center justify-between border-t border-slate-100 px-5 py-3.5">
-          <span className="flex items-center gap-1.5 text-[12.5px] text-slate-400"><Link2 className="size-3.5" />Услуги в меню бота и должности клиентов — <a href="#services" className="font-medium text-brand-600 hover:underline">ниже на этой странице</a></span>
+          <span className="flex items-center gap-1.5 text-[12px] text-slate-400"><Link2 className="size-3.5" />Услуги в меню бота и должности клиентов — <a href="#services" className="font-medium text-brand-600 hover:underline">ниже на этой странице</a></span>
           <SaveButton dirty={dirty} saving={saving} onClick={() => void saveAll()} />
         </div>
       </Card>
@@ -105,7 +104,9 @@ export function BotTab() {
 }
 
 const PRIORITY_OPTIONS = ["Низкий", "Средний", "Высокий", "Критический"];
-const rsel = "rounded-lg border border-slate-200 px-2.5 py-1.5 text-[13px] text-slate-800 focus:border-brand-500 focus:outline-none";
+const plural = (n: number, one: string, few: string, many: string) =>
+  n % 10 === 1 && n % 100 !== 11 ? one : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? few : many;
+const rsel = "rounded-lg border px-2.5 py-1.5 text-[13px] text-slate-800 focus:border-brand-500 focus:outline-none border-slate-300/80 bg-white shadow-sm focus:ring-3 focus:ring-brand-100";
 
 export function RulesTab() {
   const [rules, setRules] = useState<AssignRule[] | null>(null);
@@ -139,10 +140,10 @@ export function RulesTab() {
 
   return (
     <Card>
-      <CardHeader title="Правила автораспределения" action={
+      <CardHeader subtitle={`${rules.length} ${plural(rules.length, "правило", "правила", "правил")} · первое совпавшее срабатывает`} action={
         <button onClick={() => setRules([...rules, {
           id: "rule" + Date.now().toString(36), name: "Новое правило", enabled: true, source: "any", keywords: [], assignTo: "least_loaded", priority: null, dueDays: null,
-        }])} className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-[12.5px] font-medium hover:bg-slate-50">
+        }])} className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-slate-300/80 bg-white px-3 text-[13px] font-medium whitespace-nowrap text-slate-800 shadow-sm transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50">
           <Plus className="size-3.5" /> Правило
         </button>
       } />
@@ -150,15 +151,15 @@ export function RulesTab() {
         {rules.map((r, i) => (
           <div key={r.id} className={`space-y-2.5 px-5 py-4 ${r.enabled ? "" : "opacity-60"}`}>
             <div className="flex flex-wrap items-center gap-2">
-              <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-xs font-bold text-brand-600">{i + 1}</span>
+              <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-xs font-semibold text-brand-600">{i + 1}</span>
               <input value={r.name} onChange={(e) => upd(i, { name: e.target.value })} aria-label="Название правила"
-                className="min-w-40 flex-1 rounded-lg border border-transparent px-2 py-1 text-[14px] font-semibold hover:border-slate-200 focus:border-brand-500 focus:outline-none" />
-              <span className="flex items-center gap-2 text-[12.5px] text-slate-500"><Toggle checked={r.enabled} onChange={() => upd(i, { enabled: !r.enabled })} />{r.enabled ? "включено" : "выключено"}</span>
+                className="min-w-40 flex-1 rounded-lg border border-transparent px-2 py-1 text-[14px] font-semibold hover:border-slate-200 focus:border-brand-500 focus:outline-none border-slate-300/80 bg-white shadow-sm focus:ring-3 focus:ring-brand-100 placeholder:text-slate-400" />
+              <span className="flex items-center gap-2 text-[12px] text-slate-500"><Toggle checked={r.enabled} onChange={() => upd(i, { enabled: !r.enabled })} />{r.enabled ? "включено" : "выключено"}</span>
               <button disabled={i === 0} onClick={() => move(i, -1)} title="Выше — проверяется раньше" className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 disabled:opacity-30"><ArrowUp className="size-4" /></button>
               <button disabled={i === rules.length - 1} onClick={() => move(i, 1)} title="Ниже" className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 disabled:opacity-30"><ArrowDown className="size-4" /></button>
               <button onClick={() => setRules(rules.filter((_, xi) => xi !== i))} title="Удалить правило" className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"><Trash2 className="size-4" /></button>
             </div>
-            <div className="flex flex-wrap items-center gap-2 pl-9 text-[13.5px] text-slate-600">
+            <div className="flex flex-wrap items-center gap-2 pl-9 text-[13px] text-slate-600">
               <b className="font-semibold text-slate-800">Если</b> заявка
               <select value={r.source} onChange={(e) => upd(i, { source: e.target.value as AssignRule["source"] })} className={rsel}>
                 <option value="any">из любого источника</option>
@@ -171,7 +172,7 @@ export function RulesTab() {
                 onBlur={(e) => upd(i, { keywords: e.target.value.split(",").map((v) => v.trim().toLowerCase()).filter(Boolean) })}
                 className={`${rsel} min-w-56 flex-1`} />
             </div>
-            <div className="flex flex-wrap items-center gap-2 pl-9 text-[13.5px] text-slate-600">
+            <div className="flex flex-wrap items-center gap-2 pl-9 text-[13px] text-slate-600">
               <b className="font-semibold text-slate-800">то</b> назначить
               <select value={r.assignTo} onChange={(e) => upd(i, { assignTo: e.target.value })} className={rsel}>
                 <option value="least_loaded">наименее загруженному</option>
@@ -207,7 +208,7 @@ export function RulesTab() {
         {!rules.length && <p className="px-5 py-8 text-center text-sm text-slate-400">Правил пока нет — новые задачи остаются без исполнителя, как раньше.</p>}
       </div>
       <div className="flex items-center justify-between border-t border-slate-100 px-5 py-3.5">
-        <span className="text-[12.5px] text-slate-400">Правила проверяются по порядку сверху вниз, срабатывает первое совпавшее. Применяются к новым задачам из CRM и Telegram-бота.</span>
+        <span className="text-[12px] text-slate-400">Правила проверяются по порядку сверху вниз, срабатывает первое совпавшее. Применяются к новым задачам из CRM и Telegram-бота.</span>
         <SaveButton dirty={dirty} saving={saving} onClick={() => void save()} />
       </div>
     </Card>
@@ -268,15 +269,11 @@ export function LogsPanel() {
   const shownLogs = allLogs.filter((l) => logFilter === "all" || l.src === logFilter);
   return (
         <Card>
-      <div className="flex items-center gap-2 border-b border-slate-200 p-4">
-        {([["all", "Все"], ["tg", "Telegram"], ["crm", "CRM"]] as const).map(([v, l]) => (
-          <button key={v} onClick={() => setLogFilter(v)}
-            className={`rounded-full border px-3 py-1 text-xs font-medium transition ${logFilter === v ? "border-brand-200 bg-brand-50 text-brand-600" : "border-slate-200 text-slate-500 hover:border-slate-300"}`}>
-            {l}
-          </button>
-        ))}
+      <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 px-4 py-3">
+        <FilterChips value={logFilter} onChange={setLogFilter}
+          items={([["all", "Все"], ["tg", "Telegram"], ["crm", "CRM"]] as const).map(([id, label]) => ({ id, label }))} />
         <select value={logPeriod} onChange={(e) => setLogPeriod(e.target.value)}
-          className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium capitalize focus:border-brand-500 focus:outline-none">
+          className="h-7 rounded-md border px-2.5 text-[12px] font-medium capitalize focus:border-brand-500 focus:outline-none border-slate-300/80 bg-white shadow-sm focus:ring-3 focus:ring-brand-100 placeholder:text-slate-400">
           {monthOptions.map((o) => <option key={o.v} value={o.v}>{o.l}</option>)}
         </select>
         <span className="ml-auto flex items-center gap-1.5 text-xs text-slate-400">
@@ -286,14 +283,14 @@ export function LogsPanel() {
       </div>
       {shownLogs.length ? (
         <div className="overflow-x-auto">
-          <table className="w-full text-[13px]">
+          <table className="dt">
             <thead>
-              <tr className="border-b border-slate-200 bg-slate-50 text-left text-xs font-semibold tracking-wider text-slate-400 uppercase">
-                <th className="px-4 py-3">Время</th><th className="px-4 py-3">Источник</th><th className="px-4 py-3">Событие</th>
-                <th className="px-4 py-3">Кто</th><th className="px-4 py-3">Исполнитель</th><th className="px-4 py-3">Детали</th>
+              <tr>
+                <th className="px-4">Время</th><th className="px-4">Источник</th><th className="px-4">Событие</th>
+                <th className="px-4">Кто</th><th className="px-4">Исполнитель</th><th className="px-4">Детали</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody>
               {shownLogs.map((l, i) => (
                 <tr key={i} className="hover:bg-slate-50">
                   <td className="px-4 py-2.5 whitespace-nowrap text-slate-400">{l.time}</td>

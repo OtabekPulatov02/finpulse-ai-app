@@ -7,7 +7,7 @@ import {
 import {
   Avatar, Badge, Card, ConfirmModal, Field, Input, Menu, MenuDivider,
   MenuItem, Modal, Select, Textarea, toast, useUrlParam,
- Button, PageHeader,
+ Button, EmptyState, PageHeader, PriorityMark, Segmented,
 } from "../components/ui";
 import {
   EDITABLE_STATUSES, PRIORITIES, STATUSES,
@@ -32,11 +32,12 @@ const columns: { status: TaskStatus; dot: string; ring: string }[] = [
   { status: "Архив", dot: "bg-slate-400", ring: "ring-slate-300 bg-slate-100/80" },
 ];
 
+/* Полоска слева — только у срочных: у всех подряд она превращалась в шум */
 const prioBorder: Record<Priority, string> = {
-  "Низкий": "border-l-slate-300",
-  "Средний": "border-l-brand-500",
-  "Высокий": "border-l-amber-500",
-  "Критический": "border-l-red-500",
+  "Низкий": "",
+  "Средний": "",
+  "Высокий": "border-l-[3px] border-l-amber-500",
+  "Критический": "border-l-[3px] border-l-red-500",
 };
 
 function sourceLabel(t: Task) {
@@ -110,8 +111,8 @@ export function TaskFormModal({
     <Modal open={open} onClose={onClose} title={task ? "Изменить задачу" : "Новая задача"} wide
       footer={
         <>
-          <button onClick={onClose} className="rounded-lg border border-slate-200 px-4 py-2 text-[13px] font-medium hover:bg-slate-50">Отмена</button>
-          <button disabled={saving} onClick={submit} className="flex items-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2 text-[13px] font-medium text-white hover:bg-brand-700 disabled:opacity-60">
+          <button onClick={onClose} className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-slate-300/80 bg-white px-3.5 text-[13px] font-medium whitespace-nowrap text-slate-800 shadow-sm transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50">Отмена</button>
+          <button disabled={saving} onClick={submit} className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-brand-700/20 bg-brand-600 px-3.5 text-[13px] font-medium whitespace-nowrap text-white shadow-sm transition-colors hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-50">
             {task ? <Check className="size-4" /> : <Plus className="size-4" />}
             {saving ? "Сохраняем…" : task ? "Сохранить" : "Создать задачу"}
           </button>
@@ -223,7 +224,7 @@ function TaskHistory({ taskId }: { taskId: number }) {
   return (
     <ul className="space-y-3 py-1">
       {history.map((l, i) => (
-        <li key={i} className="flex items-start gap-2.5 text-[12.5px]">
+        <li key={i} className="flex items-start gap-2.5 text-[12px]">
           <Badge tone={l.src === "tg" ? "cyan" : "purple"}>{l.src === "tg" ? "Telegram" : "CRM"}</Badge>
           <div className="min-w-0 flex-1">
             <div className="font-medium">{l.event}{l.who !== "—" && <> · {l.who}</>}</div>
@@ -293,7 +294,7 @@ function TaskChat({ task }: { task: Task }) {
         <div ref={bottomRef} />
       </div>
       {file && (
-        <div className="mt-2 flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-[12.5px]">
+        <div className="mt-2 flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-[12px]">
           <span className="flex min-w-0 items-center gap-1.5 text-slate-600">
             <Paperclip className="size-3.5 shrink-0 text-slate-400" />
             <span className="truncate">{file.name}</span>
@@ -331,7 +332,7 @@ function InfoField({ label, children }: { label: string; children: ReactNode }) 
   return (
     <div>
       <div className="text-[11px] font-medium tracking-wide text-slate-400 uppercase">{label}</div>
-      <div className="mt-1 text-[13.5px] text-slate-700">{children}</div>
+      <div className="mt-1 text-[13px] text-slate-700">{children}</div>
     </div>
   );
 }
@@ -367,9 +368,9 @@ export function TaskDetailBody({ task, showOpenLink }: { task: Task; showOpenLin
             </Link>
           )}
         </div>
-        <h3 className="text-lg leading-snug font-bold">{task.title}</h3>
+        <h3 className="text-lg leading-snug font-semibold">{task.title}</h3>
         {task.description && (
-          <p className="mt-3 text-[13.5px] leading-relaxed text-slate-600">{task.description}</p>
+          <p className="mt-3 text-[13px] leading-relaxed text-slate-600">{task.description}</p>
         )}
         {!!task.attachments?.length && (
           <div className="mt-4">
@@ -443,36 +444,18 @@ export function TaskDetailActions({
   const isDone = task.status === "Выполнена";
   return (
     <>
-      {!isDone && !isCancelled && (
-        <button
-          onClick={() => { setTaskStatus(task.id, "Выполнена"); toast("Статус обновлён — задача выполнена"); afterAction?.(); }}
-          className="mr-auto flex items-center gap-1.5 rounded-lg bg-emerald-600 px-4 py-2 text-[13px] font-medium text-white hover:bg-emerald-700">
-          <Check className="size-4" /> Выполнена
-        </button>
-      )}
+      {/* удаление — слева и тише, чтобы не промахнуться мимо основных действий */}
+      <Button variant="ghost" className="mr-auto text-slate-500 hover:!bg-red-50 hover:!text-red-600" icon={<Trash2 />} onClick={() => onDelete(task)} aria-label="Удалить задачу">Удалить</Button>
       {!isCancelled && !isDone && (
-        <button
-          onClick={() => { setTaskStatus(task.id, "Отменено"); toast("Задача отменена"); afterAction?.(); }}
-          className="flex items-center gap-1.5 rounded-lg border border-red-200 px-3.5 py-2 text-[13px] font-medium text-red-600 hover:bg-red-50">
-          <X className="size-4" /> Отменить
-        </button>
+        <Button variant="secondary" icon={<X />} onClick={() => { setTaskStatus(task.id, "Отменено"); toast("Задача отменена"); afterAction?.(); }}>Отменить задачу</Button>
       )}
       {isCancelled && (
-        <button
-          onClick={() => { setTaskStatus(task.id, "Новая"); toast("Задача возобновлена"); afterAction?.(); }}
-          className="mr-auto flex items-center gap-1.5 rounded-lg border border-slate-200 px-3.5 py-2 text-[13px] font-medium text-slate-600 hover:bg-slate-50">
-          <RotateCcw className="size-4" /> Возобновить
-        </button>
+        <Button variant="secondary" icon={<RotateCcw />} onClick={() => { setTaskStatus(task.id, "Новая"); toast("Задача возобновлена"); afterAction?.(); }}>Возобновить</Button>
       )}
-      <button onClick={() => onEdit(task)}
-        className="flex items-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2 text-[13px] font-medium text-white hover:bg-brand-700">
-        <Pencil className="size-4" /> Изменить
-      </button>
-      {/* удаление — отдельно и тише, чтобы не промахнуться мимо «Изменить» */}
-      <button onClick={() => onDelete(task)} title="Удалить задачу" aria-label="Удалить задачу"
-        className="ml-2 flex items-center rounded-lg p-2 text-slate-400 hover:bg-red-50 hover:text-red-600">
-        <Trash2 className="size-4" />
-      </button>
+      <Button variant={!isDone && !isCancelled ? "secondary" : "primary"} icon={<Pencil />} onClick={() => onEdit(task)}>Изменить</Button>
+      {!isDone && !isCancelled && (
+        <Button icon={<Check />} onClick={() => { setTaskStatus(task.id, "Выполнена"); toast("Статус обновлён — задача выполнена"); afterAction?.(); }}>Отметить выполненной</Button>
+      )}
     </>
   );
 }
@@ -576,26 +559,13 @@ export default function Tasks() {
       <PageHeader
         title="Задачи"
         subtitle={`${active} активных · ${overdue} просроченных · ${done} выполнено`}
-        actions={<div className="flex flex-wrap items-center gap-2.5">
-          <div className="flex rounded-lg border border-slate-200 bg-slate-50 p-0.5">
-            {([["1", "Мои"], ["0", "Все"]] as const).map(([v, label]) => (
-              <button key={v} onClick={() => setMine(v)} title={v === "1" ? `Задачи, где исполнитель — ${myName}` : "Задачи всей команды"}
-                className={`rounded-md px-3 py-1.5 text-[13px] font-medium transition ${mine === v ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>
-                {label}
-              </button>
-            ))}
-          </div>
-          <div className="flex rounded-lg border border-slate-200 bg-slate-50 p-0.5">
-            {([["kanban", "Канбан", Kanban], ["table", "Таблица", LayoutList]] as const).map(([v, label, Icon]) => (
-              <button key={v} onClick={() => setView(v)}
-                className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[13px] font-medium transition ${
-                  view === v ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>
-                <Icon className="size-4" /> {label}
-              </button>
-            ))}
-          </div>
-          <Button onClick={() => openCreate()} icon={<Plus className="size-4" />}>Создать задачу</Button>
-        </div>}
+        actions={<>
+          <Segmented value={mine} onChange={(v) => setMine(v)}
+            items={[{ id: "1" as const, label: <span title={`Задачи, где исполнитель — ${myName}`}>Мои</span> }, { id: "0" as const, label: "Все" }]} />
+          <Segmented value={view} onChange={(v) => setView(v)}
+            items={[{ id: "kanban" as const, label: "Канбан", icon: <Kanban /> }, { id: "table" as const, label: "Таблица", icon: <LayoutList /> }]} />
+          <Button onClick={() => openCreate()} icon={<Plus />}>Создать задачу</Button>
+        </>}
       />
 
       {/* ---------- КАНБАН ---------- */}
@@ -609,12 +579,12 @@ export default function Tasks() {
                 onDragOver={(e) => { e.preventDefault(); setOverCol(status); }}
                 onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setOverCol(null); }}
                 onDrop={(e) => { e.preventDefault(); onDrop(status); }}
-                className={`min-w-0 rounded-xl p-2 ring-2 transition-all ${
-                  isOver ? `${ring} ring-inset` : "bg-slate-100/70 ring-transparent"}`}>
-                <div className="flex items-center gap-2 px-1.5 pb-2.5 text-[13px] font-semibold">
+                className={`min-w-0 rounded-xl border p-2 transition-colors ${
+                  isOver ? `${ring} border-transparent ring-2 ring-inset` : "border-slate-200 bg-slate-100/60"}`}>
+                <div className="flex h-8 items-center gap-2 px-1.5 pb-1 text-[13px] font-semibold text-slate-800">
                   <span className={`size-2 rounded-full ${dot}`} />
                   {status}
-                  <span className="rounded-full bg-white px-2 py-px text-[11px] font-semibold text-slate-400 shadow-sm">{items.length}</span>
+                  <span className="rounded bg-white px-1.5 text-[11px] leading-[18px] font-semibold text-slate-500 tabular-nums ring-1 ring-slate-200">{items.length}</span>
                   {status !== "Архив" && (
                     <button onClick={() => openCreate(status)}
                       className="ml-auto rounded-md p-1 text-slate-400 transition hover:bg-white hover:text-slate-700" title="Добавить сюда">
@@ -631,15 +601,15 @@ export default function Tasks() {
                         onDragStart={(e) => { setDragId(t.id); e.dataTransfer.effectAllowed = "move"; }}
                         onDragEnd={() => { setDragId(null); setOverCol(null); }}
                         onClick={() => setViewTask(t)}
-                        className={`cursor-grab border-l-[3px] p-3 transition select-none active:cursor-grabbing ${prioBorder[t.priority]} ${
-                          dragId === t.id ? "rotate-1 opacity-40 shadow-lg" : "hover:-translate-y-0.5 hover:shadow-md"}`}>
+                        className={`cursor-grab p-3 transition select-none active:cursor-grabbing ${prioBorder[t.priority]} ${
+                          dragId === t.id ? "opacity-40 shadow-lg" : "hover:border-slate-300 hover:shadow"}`}>
                         <div className="flex items-center gap-1.5 text-[11px] font-medium text-slate-400">
                           <Hash className="size-3" />{t.id}
                           {t.type === "reminder" && <Badge tone="cyan">напоминание</Badge>}
                         </div>
-                        <div className="mt-0.5 line-clamp-2 text-[13px] leading-snug font-semibold">{t.title}</div>
-                        <div className="mt-1 truncate text-xs text-slate-400">{t.client}</div>
-                        <div className="mt-2.5 flex items-center justify-between">
+                        <div className="mt-1 line-clamp-2 text-[13px] leading-snug font-medium text-slate-900">{t.title}</div>
+                        <div className="mt-1 truncate text-[12px] text-slate-500">{t.client}</div>
+                        <div className="mt-2.5 flex items-center justify-between border-t border-slate-100 pt-2">
                           <span className={`flex items-center gap-1.5 text-[11px] ${isOverdue(t) ? "font-semibold text-red-500" : "text-slate-400"}`}>
                             {status === "Архив" ? <Archive className="size-3" />
                               : status === "Выполнена" ? <Check className="size-3 text-emerald-500" />
@@ -669,7 +639,7 @@ export default function Tasks() {
       {/* ---------- ТАБЛИЦА ---------- */}
       {view === "table" && (
         <Card>
-          <div className="flex flex-wrap gap-2.5 border-b border-slate-200 p-4">
+          <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 px-4 py-3">
             <div className="relative min-w-56 flex-1 max-w-xs">
               <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400" />
               <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Поиск по названию, клиенту" className="!pl-9" />
@@ -685,26 +655,26 @@ export default function Tasks() {
             </Select>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full text-[13.5px]">
+            <table className="dt">
               <thead>
-                <tr className="border-b border-slate-200 bg-slate-50 text-left text-xs font-semibold tracking-wider text-slate-400 uppercase">
-                  <th className="px-4 py-3">Название</th>
-                  <th className="px-4 py-3">Клиент</th>
-                  <th className="px-4 py-3">Исполнитель</th>
-                  <th className="px-4 py-3">Статус</th>
-                  <th className="px-4 py-3">Приоритет</th>
-                  <th className="px-4 py-3">Дедлайн</th>
-                  <th className="px-4 py-3" />
+                <tr>
+                  <th className="px-4">Название</th>
+                  <th className="px-4">Клиент</th>
+                  <th className="px-4">Исполнитель</th>
+                  <th className="px-4">Статус</th>
+                  <th className="px-4">Приоритет</th>
+                  <th className="px-4">Дедлайн</th>
+                  <th className="px-4" />
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody>
                 {filtered.map((t) => {
                   const src = sourceLabel(t);
                   return (
-                    <tr key={t.id} onClick={() => setViewTask(t)} className="cursor-pointer transition-colors hover:bg-slate-50">
+                    <tr key={t.id} onClick={() => setViewTask(t)} className="cursor-pointer">
                       <td className="max-w-sm px-4 py-3">
-                        <div className="truncate font-semibold">{t.title}</div>
-                        <div className="flex items-center gap-1 text-xs text-slate-400">
+                        <div className="truncate font-medium text-slate-900">{t.title}</div>
+                        <div className="mt-0.5 flex items-center gap-1 text-[12px] text-slate-500">
                           <Hash className="size-3" />{t.id}{src && <> · {src}</>}
                         </div>
                       </td>
@@ -715,7 +685,7 @@ export default function Tasks() {
                       {/* статус — бейдж; меняется в карточке или через меню «…»: случайный клик
                           по выпадающему списку раньше сразу уведомлял клиента (UX-аудит) */}
                       <td className="px-4 py-3"><Badge tone={displayStatus(t) === "Архив" ? "gray" : statusTone[t.status as (typeof EDITABLE_STATUSES)[number]]}>{displayStatus(t)}</Badge></td>
-                      <td className="px-4 py-3"><Badge tone={priorityTone[t.priority]}>{t.priority}</Badge></td>
+                      <td className="px-4 py-3"><PriorityMark value={t.priority} /></td>
                       <td className={`px-4 py-3 whitespace-nowrap ${isOverdue(t) ? "font-semibold text-red-600" : ""}`}>{t.due}</td>
                       <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
                         <Menu trigger={
@@ -748,14 +718,10 @@ export default function Tasks() {
               </tbody>
             </table>
             {!filtered.length && (
-              <div className="p-12 text-center">
-                <div className="mx-auto mb-3 flex size-12 items-center justify-center rounded-full bg-slate-100 text-slate-400"><Search className="size-5" /></div>
-                <div className="font-semibold">Задачи не найдены</div>
-                <p className="mt-1 text-[13px] text-slate-400">Измените условия поиска или создайте новую задачу.</p>
-              </div>
+              <EmptyState icon={<Search />} title="Задачи не найдены" hint="Измените условия поиска или создайте новую задачу." />
             )}
           </div>
-          <div className="border-t border-slate-100 px-4 py-3 text-xs text-slate-400">
+          <div className="border-t border-slate-200 bg-slate-50 px-4 py-2.5 text-[12px] text-slate-500 rounded-b-xl">
             Показано {filtered.length} из {tasks.length} задач
           </div>
         </Card>

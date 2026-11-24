@@ -46,6 +46,7 @@ export interface BotTask {
   files: number;
   attachments?: TaskAttachment[];
   dueDate?: string | null;
+  priority?: string | null;
   source?: "bot" | "crm";
   doneAt?: string | null;
   type?: "task" | "reminder";

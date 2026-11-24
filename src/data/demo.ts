@@ -16,7 +16,7 @@ export const statusTone: Record<TaskStatus, Tone> = {
   "Новая": "purple", "В работе": "blue", "Выполнена": "green", "Отменено": "red", "Архив": "gray",
 };
 export const priorityTone: Record<Priority, Tone> = {
-  "Низкий": "gray", "Средний": "blue", "Высокий": "yellow", "Критический": "red",
+  "Низкий": "gray", "Средний": "gray", "Высокий": "yellow", "Критический": "red",
 };
 
 export interface TaskAttachment {
@@ -49,6 +49,8 @@ export interface Task {
   fromCalendar?: boolean;
   description?: string;
   created?: string;
+  /** ISO-время создания (для периодов в аналитике) */
+  createdAt?: string | null;
   attachments?: TaskAttachment[];
   /* "task" — обычная задача, "reminder" — авто-созданная из календаря
      (налог/платёж); у напоминаний может не быть клиента/компании. */

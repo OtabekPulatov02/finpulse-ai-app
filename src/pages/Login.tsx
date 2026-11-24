@@ -75,32 +75,33 @@ export default function Login() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
-      <div className="w-full max-w-sm rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
+      <div className="w-full max-w-[380px] rounded-2xl border border-slate-200 bg-white px-8 pt-6 pb-8 shadow-md">
         <div className="flex items-center justify-center">
-          <BrandMark className="h-40" />
+          <BrandMark className="h-28" />
         </div>
 
-        <h1 className="mb-5 text-center text-lg font-semibold">Вход в систему</h1>
+        <h1 className="text-center text-[20px] font-semibold tracking-[-0.01em]">Вход в систему</h1>
+        <p className="mt-1 mb-6 text-center text-[13px] text-slate-500">Finpulse CRM для бухгалтерии</p>
 
         <form onSubmit={submit} className="space-y-3.5">
           <div>
-            <label className="mb-1 block text-[13px] font-medium text-slate-700">Логин или телефон</label>
+            <label className="mb-1.5 block text-[12px] font-medium text-slate-700">Логин или телефон</label>
             <input
               value={identity}
               onChange={(e) => setIdentity(e.target.value)}
               placeholder="+998901234567 или логин"
               autoComplete="username"
-              className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm transition focus:border-brand-500 focus:bg-white focus:ring-2 focus:ring-brand-100 focus:outline-none"
+              className="h-10 w-full rounded-lg border border-slate-300/80 px-3 text-[14px] transition placeholder:text-slate-400 hover:border-slate-300 focus:border-brand-500 focus:ring-3 focus:outline-none bg-white shadow-sm focus:ring-brand-100"
             />
           </div>
           <div>
-            <label className="mb-1 block text-[13px] font-medium text-slate-700">Пароль</label>
+            <label className="mb-1.5 block text-[12px] font-medium text-slate-700">Пароль</label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               autoComplete="current-password"
-              className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm transition focus:border-brand-500 focus:bg-white focus:ring-2 focus:ring-brand-100 focus:outline-none"
+              className="h-10 w-full rounded-lg border border-slate-300/80 px-3 text-[14px] transition placeholder:text-slate-400 hover:border-slate-300 focus:border-brand-500 focus:ring-3 focus:outline-none bg-white shadow-sm focus:ring-brand-100"
             />
           </div>
 
@@ -113,7 +114,7 @@ export default function Login() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-lg bg-brand-600 px-3 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-700 disabled:opacity-60"
+            className="w-full inline-flex h-10 items-center justify-center gap-1.5 rounded-lg border border-brand-700/20 bg-brand-600 px-3.5 text-[13px] font-medium whitespace-nowrap text-white shadow-sm transition-colors hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {loading ? "Входим…" : "Войти"}
           </button>
@@ -130,7 +131,7 @@ export default function Login() {
         <button
           onClick={loginAsGuest}
           disabled={loading}
-          className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50 disabled:opacity-60"
+          className="w-full inline-flex h-10 items-center justify-center gap-1.5 rounded-lg border border-slate-300/80 bg-white px-3.5 text-[13px] font-medium whitespace-nowrap text-slate-800 shadow-sm transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
         >
           Войти как гость (демо-доступ)
         </button>

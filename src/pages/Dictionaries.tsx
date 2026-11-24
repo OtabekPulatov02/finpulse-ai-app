@@ -33,7 +33,7 @@ type CatId = (typeof CATS)[number]["id"];
 function EditableListCard({
   title, hint, items, onSave, placeholder,
 }: {
-  title: string; hint?: string; items: string[]; onSave: (items: string[]) => Promise<void>; placeholder: string;
+  title?: string; hint?: string; items: string[]; onSave: (items: string[]) => Promise<void>; placeholder: string;
 }) {
   const [list, setList] = useState(items);
   const [draft, setDraft] = useState("");
@@ -63,11 +63,11 @@ function EditableListCard({
 
   return (
     <Card>
-      <CardHeader title={title} />
+      {title && <CardHeader title={title} />}
       <div className="divide-y divide-slate-100">
         {list.map((v, i) => (
           <div key={i} className="flex items-center justify-between gap-3 px-5 py-2.5">
-            <span className="text-[13.5px] font-medium">{v}</span>
+            <span className="text-[13px] font-medium">{v}</span>
             <button onClick={() => remove(i)} className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"><Trash2 className="size-3.5" /></button>
           </div>
         ))}
@@ -75,8 +75,8 @@ function EditableListCard({
         <div className="flex items-center gap-2 px-5 py-3">
           <input value={draft} onChange={(e) => setDraft(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") add(); }}
-            placeholder={placeholder} className="flex-1 rounded-lg border border-slate-200 px-3 py-1.5 text-[13px] focus:border-brand-500 focus:outline-none" />
-          <button onClick={add} className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium hover:bg-slate-50"><Plus className="size-3.5" />Добавить</button>
+            placeholder={placeholder} className="flex-1 rounded-lg border px-3 py-1.5 text-[13px] focus:border-brand-500 focus:outline-none border-slate-300/80 bg-white shadow-sm focus:ring-3 focus:ring-brand-100 placeholder:text-slate-400" />
+          <button onClick={add} className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-slate-300/80 bg-white px-3 text-[13px] font-medium whitespace-nowrap text-slate-800 shadow-sm transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"><Plus className="size-3.5" />Добавить</button>
         </div>
       </div>
       {hint && <p className="border-t border-slate-100 px-5 py-2.5 text-xs text-slate-400">{hint}</p>}
@@ -109,9 +109,9 @@ export function TasksDicts({ only }: { only?: "cats" | "statuses" } = {}) {
   return (
     <div className="space-y-4">
       {only !== "statuses" && <Card>
-        <CardHeader title="Категории и подкатегории заявок (Telegram-бот)" action={
+        <CardHeader title={only ? undefined : "Категории и подкатегории заявок (Telegram-бот)"} subtitle="Категория — кнопка в боте, подкатегории — через запятую" action={
           cats && <button onClick={() => setCats([...cats, { id: "cat" + Date.now().toString(36), name: "Новая категория", subs: [] }])}
-            className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-[12.5px] font-medium hover:bg-slate-50">
+            className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-slate-300/80 bg-white px-3 text-[13px] font-medium whitespace-nowrap text-slate-800 shadow-sm transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50">
             <Plus className="size-3.5" /> Категория
           </button>
         } />
@@ -123,18 +123,18 @@ export function TasksDicts({ only }: { only?: "cats" | "statuses" } = {}) {
               {cats.map((c, i) => (
                 <div key={c.id} className="flex flex-wrap items-start gap-3 px-5 py-3">
                   <input value={c.name} onChange={(e) => setCats(cats.map((x, xi) => xi === i ? { ...x, name: e.target.value } : x))}
-                    className="w-56 rounded-lg border border-slate-200 px-2.5 py-1.5 text-[13px] font-medium focus:border-brand-500 focus:outline-none" />
+                    className="w-56 rounded-lg border px-2.5 py-1.5 text-[13px] font-medium focus:border-brand-500 focus:outline-none border-slate-300/80 bg-white shadow-sm focus:ring-3 focus:ring-brand-100 placeholder:text-slate-400" />
                   <input value={c.subs.join(", ")} placeholder="Подкатегории через запятую (пусто — сразу свободный текст)"
                     onChange={(e) => setCats(cats.map((x, xi) => xi === i ? { ...x, subs: e.target.value.split(",").map((v) => v.trimStart()) } : x))}
                     onBlur={(e) => setCats(cats.map((x, xi) => xi === i ? { ...x, subs: e.target.value.split(",").map((v) => v.trim()).filter(Boolean) } : x))}
-                    className="min-w-64 flex-1 rounded-lg border border-slate-200 px-2.5 py-1.5 text-[13px] focus:border-brand-500 focus:outline-none" />
+                    className="min-w-64 flex-1 rounded-lg border px-2.5 py-1.5 text-[13px] focus:border-brand-500 focus:outline-none border-slate-300/80 bg-white shadow-sm focus:ring-3 focus:ring-brand-100 placeholder:text-slate-400" />
                   <button onClick={() => setCats(cats.filter((_, xi) => xi !== i))} className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"><Trash2 className="size-4" /></button>
                 </div>
               ))}
               {!cats.length && <p className="px-5 py-6 text-center text-xs text-slate-400">Категорий пока нет</p>}
             </div>
             <div className="flex items-center justify-between border-t border-slate-100 px-5 py-3.5">
-              <span className="text-[12.5px] text-slate-400">Клиент видит категории табами при создании заявки в боте.</span>
+              <span className="text-[12px] text-slate-400">Клиент видит категории табами при создании заявки в боте.</span>
               <SaveButton dirty={catsDirty.dirty} saving={saving} onClick={() => void save()} />
             </div>
           </>
@@ -196,7 +196,7 @@ export function ClientsDicts({ only }: { only?: "positions" | "tariffs" } = {}) 
   return (
     <div className="space-y-4">
       {only !== "tariffs" && <EditableListCard
-        title="Должности клиентов"
+        title={only ? undefined : "Должности клиентов"}
         hint="Показываются табами при регистрации в боте и в карточке клиента."
         items={positions ?? []}
         placeholder="Новая должность"
@@ -204,34 +204,34 @@ export function ClientsDicts({ only }: { only?: "positions" | "tariffs" } = {}) 
       />}
 
       {only !== "positions" && <Card>
-        <CardHeader title="Тарифы и лимиты операций" action={
+        <CardHeader title={only ? undefined : "Тарифы и лимиты операций"} subtitle={tariffs ? `Тарифов: ${tariffs.length}` : undefined} action={
           tariffs && <button onClick={() => setTariffs((r) => [...r!, { id: "t" + Date.now().toString(36), name: "Новый тариф", price: 0, monthlyLimit: 30, overPackOps: 10, overPackPrice: 0 }])}
-            className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-[12.5px] font-medium hover:bg-slate-50">
+            className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-slate-300/80 bg-white px-3 text-[13px] font-medium whitespace-nowrap text-slate-800 shadow-sm transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50">
             <Plus className="size-3.5" /> Добавить тариф
           </button>
         } />
         {!tariffs ? <div className="p-8 text-center text-sm text-slate-400">Загрузка…</div> : (
           <>
             <div className="overflow-x-auto">
-              <table className="w-full text-[13px]">
+              <table className="dt">
                 <thead>
-                  <tr className="border-b border-slate-200 bg-slate-50 text-left text-xs font-semibold tracking-wider text-slate-400 uppercase">
-                    <th className="px-4 py-3">Название</th>
-                    <th className="px-4 py-3">Цена, сум/мес</th>
-                    <th className="px-4 py-3">Лимит операций/мес</th>
-                    <th className="px-4 py-3">Пакет сверхлимита, опер.</th>
-                    <th className="px-4 py-3">Цена пакета, сум</th>
-                    <th className="px-4 py-3" />
+                  <tr>
+                    <th className="px-4">Название</th>
+                    <th className="px-4">Цена, сум/мес</th>
+                    <th className="px-4">Лимит операций/мес</th>
+                    <th className="px-4">Пакет сверхлимита, опер.</th>
+                    <th className="px-4">Цена пакета, сум</th>
+                    <th className="px-4" />
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody>
                   {tariffs.map((t, i) => (
                     <tr key={t.id}>
-                      <td className="px-4 py-2"><input value={t.name} onChange={(e) => upd(i, "name", e.target.value)} className="w-36 rounded-lg border border-slate-200 px-2.5 py-1.5 focus:border-brand-500 focus:outline-none" /></td>
-                      <td className="px-4 py-2"><input value={num(t.price)} onChange={(e) => upd(i, "price", e.target.value)} className="w-28 rounded-lg border border-slate-200 px-2.5 py-1.5 focus:border-brand-500 focus:outline-none" /></td>
-                      <td className="px-4 py-2"><input value={num(t.monthlyLimit)} onChange={(e) => upd(i, "monthlyLimit", e.target.value)} placeholder="∞" className="w-24 rounded-lg border border-slate-200 px-2.5 py-1.5 focus:border-brand-500 focus:outline-none" /></td>
-                      <td className="px-4 py-2"><input value={num(t.overPackOps)} onChange={(e) => upd(i, "overPackOps", e.target.value)} placeholder="—" className="w-24 rounded-lg border border-slate-200 px-2.5 py-1.5 focus:border-brand-500 focus:outline-none" /></td>
-                      <td className="px-4 py-2"><input value={num(t.overPackPrice)} onChange={(e) => upd(i, "overPackPrice", e.target.value)} placeholder="—" className="w-28 rounded-lg border border-slate-200 px-2.5 py-1.5 focus:border-brand-500 focus:outline-none" /></td>
+                      <td className="px-4 py-2"><input value={t.name} onChange={(e) => upd(i, "name", e.target.value)} className="w-36 rounded-lg border px-2.5 py-1.5 focus:border-brand-500 focus:outline-none border-slate-300/80 bg-white shadow-sm focus:ring-3 focus:ring-brand-100 placeholder:text-slate-400" /></td>
+                      <td className="px-4 py-2"><input value={num(t.price)} onChange={(e) => upd(i, "price", e.target.value)} className="w-28 rounded-lg border px-2.5 py-1.5 focus:border-brand-500 focus:outline-none border-slate-300/80 bg-white shadow-sm focus:ring-3 focus:ring-brand-100 placeholder:text-slate-400" /></td>
+                      <td className="px-4 py-2"><input value={num(t.monthlyLimit)} onChange={(e) => upd(i, "monthlyLimit", e.target.value)} placeholder="∞" className="w-24 rounded-lg border px-2.5 py-1.5 focus:border-brand-500 focus:outline-none border-slate-300/80 bg-white shadow-sm focus:ring-3 focus:ring-brand-100 placeholder:text-slate-400" /></td>
+                      <td className="px-4 py-2"><input value={num(t.overPackOps)} onChange={(e) => upd(i, "overPackOps", e.target.value)} placeholder="—" className="w-24 rounded-lg border px-2.5 py-1.5 focus:border-brand-500 focus:outline-none border-slate-300/80 bg-white shadow-sm focus:ring-3 focus:ring-brand-100 placeholder:text-slate-400" /></td>
+                      <td className="px-4 py-2"><input value={num(t.overPackPrice)} onChange={(e) => upd(i, "overPackPrice", e.target.value)} placeholder="—" className="w-28 rounded-lg border px-2.5 py-1.5 focus:border-brand-500 focus:outline-none border-slate-300/80 bg-white shadow-sm focus:ring-3 focus:ring-brand-100 placeholder:text-slate-400" /></td>
                       <td className="px-4 py-2 text-right">
                         <button onClick={() => setTariffs((r) => r!.filter((_, idx) => idx !== i))} className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"><Trash2 className="size-4" /></button>
                       </td>
@@ -241,7 +241,7 @@ export function ClientsDicts({ only }: { only?: "positions" | "tariffs" } = {}) 
               </table>
             </div>
             <div className="flex items-center justify-between border-t border-slate-100 px-5 py-3.5">
-              <span className="text-[12.5px] text-slate-400">Пустой лимит = безлимит. «Операция» — выполненная задача клиента за календарный месяц.</span>
+              <span className="text-[12px] text-slate-400">Пустой лимит = безлимит. «Операция» — выполненная задача клиента за календарный месяц.</span>
               <SaveButton dirty={tariffsDirty.dirty} saving={savingTariffs} onClick={() => void saveTariffsNow()} />
             </div>
           </>
@@ -279,16 +279,16 @@ function ReminderTypeLabelsCard({ dicts, onSaved }: { dicts: Dicts; onSaved: (d:
         <div>
           <div className="mb-1.5 text-[13px] font-medium text-slate-500">Налоговый тип</div>
           <input value={tax} onChange={(e) => setTax(e.target.value)}
-            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-[13px] focus:border-brand-500 focus:outline-none" />
+            className="w-full rounded-lg border px-3 py-2 text-[13px] focus:border-brand-500 focus:outline-none border-slate-300/80 bg-white shadow-sm focus:ring-3 focus:ring-brand-100 placeholder:text-slate-400" />
         </div>
         <div>
           <div className="mb-1.5 text-[13px] font-medium text-slate-500">Платёжный тип</div>
           <input value={pay} onChange={(e) => setPay(e.target.value)}
-            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-[13px] focus:border-brand-500 focus:outline-none" />
+            className="w-full rounded-lg border px-3 py-2 text-[13px] focus:border-brand-500 focus:outline-none border-slate-300/80 bg-white shadow-sm focus:ring-3 focus:ring-brand-100 placeholder:text-slate-400" />
         </div>
       </div>
       <div className="flex items-center justify-between border-t border-slate-100 px-5 py-3.5">
-        <span className="text-[12.5px] text-slate-400">Два системных типа напоминания (налог/платёж) — можно переименовать подпись, но не добавить третий: логика формы и цвета в календаре завязаны именно на эти два.</span>
+        <span className="text-[12px] text-slate-400">Два системных типа напоминания (налог/платёж) — можно переименовать подпись, но не добавить третий: логика формы и цвета в календаре завязаны именно на эти два.</span>
         <SaveButton dirty={dirty} saving={saving} onClick={() => void save()} />
       </div>
     </Card>
@@ -326,21 +326,21 @@ export function CalendarDicts() {
         <Card>
           <CardHeader title="Типы событий календаря" />
           <div className="divide-y divide-slate-100">
-            {dicts.calendarEventTypes.map((t) => <div key={t} className="px-5 py-3 text-[13.5px] font-medium">{t}</div>)}
+            {dicts.calendarEventTypes.map((t) => <div key={t} className="px-5 py-3 text-[13px] font-medium">{t}</div>)}
           </div>
           <p className="border-t border-slate-100 px-5 py-2.5 text-xs text-slate-400">Системные — у каждого свой цвет/иконка/фильтр в коде календаря.</p>
         </Card>
         <Card>
           <CardHeader title="Интервалы напоминаний" />
           <div className="divide-y divide-slate-100">
-            {dicts.reminderIntervals.map((t) => <div key={t} className="px-5 py-3 text-[13.5px] font-medium">{t}</div>)}
+            {dicts.reminderIntervals.map((t) => <div key={t} className="px-5 py-3 text-[13px] font-medium">{t}</div>)}
           </div>
           <p className="border-t border-slate-100 px-5 py-2.5 text-xs text-slate-400">Системные — каждый жёстко привязан к числу дней в форме напоминания.</p>
         </Card>
         <Card>
           <CardHeader title="Периодичность повторов" />
           <div className="divide-y divide-slate-100">
-            {dicts.repeatPeriods.map((t) => <div key={t} className="px-5 py-3 text-[13.5px] font-medium">{t}</div>)}
+            {dicts.repeatPeriods.map((t) => <div key={t} className="px-5 py-3 text-[13px] font-medium">{t}</div>)}
           </div>
           <p className="border-t border-slate-100 px-5 py-2.5 text-xs text-slate-400">Системные — соответствуют фиксированным значениям на бэкенде.</p>
         </Card>
@@ -356,8 +356,8 @@ export function OneCDicts() {
 
   return (
     <Card>
-      <CardHeader title="Подразделения организаций (из 1С)" action={
-        <Link to="/settings/1c" className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-[12.5px] font-medium hover:bg-slate-50">
+      <CardHeader subtitle="Загружаются из 1С по каждой организации" action={
+        <Link to="/settings/1c" className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-slate-300/80 bg-white px-3 text-[13px] font-medium whitespace-nowrap text-slate-800 shadow-sm transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50">
           <ExternalLink className="size-3.5" /> Синк в разделе «1С»
         </Link>
       } />
@@ -368,7 +368,7 @@ export function OneCDicts() {
           {rows.map((b) => (
             <div key={b.code} className="px-5 py-3">
               <div className="flex items-center justify-between gap-3">
-                <span className="text-[13.5px] font-medium">{b.name}</span>
+                <span className="text-[13px] font-medium">{b.name}</span>
                 <Badge tone={b.count ? "green" : "gray"}>{b.count} подразделений</Badge>
               </div>
               {!!b.items.length && <p className="mt-1 truncate text-xs text-slate-400">{b.items.join(", ")}</p>}
@@ -420,11 +420,11 @@ export function KnowledgeBaseDicts() {
     }
   };
 
-  const inputClass = "w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm transition focus:border-brand-500 focus:bg-white focus:ring-2 focus:ring-brand-100 focus:outline-none";
+  const inputClass = "w-full rounded-lg border px-3 py-2 transition focus:border-brand-500 focus:outline-none text-[13px] border-slate-300/80 bg-white shadow-sm focus:ring-3 focus:ring-brand-100";
 
   return (
     <Card>
-      <CardHeader title="База знаний" />
+      
       <div className="space-y-3 border-b border-slate-100 p-5">
         <p className="text-xs text-slate-400">
           Проверенные бухгалтерами ответы и регламенты — ИИ ищет здесь ПЕРЕД тем, как отвечать своими словами на вопросы по учёту/налогам УЗ, и явно цитирует найденное вместо общих рассуждений.
@@ -436,7 +436,7 @@ export function KnowledgeBaseDicts() {
         <input placeholder="Теги через запятую (необязательно)" value={tagsInput}
           onChange={(e) => setTagsInput(e.target.value)} className={inputClass} />
         <button onClick={add} disabled={saving}
-          className="flex items-center gap-1.5 rounded-lg bg-brand-600 px-3.5 py-2 text-[13px] font-medium text-white hover:bg-brand-700 disabled:opacity-60">
+          className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-brand-700/20 bg-brand-600 px-3.5 text-[13px] font-medium whitespace-nowrap text-white shadow-sm transition-colors hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-50">
           <Plus className="size-3.5" /> {saving ? "Добавляем…" : "Добавить в базу знаний"}
         </button>
       </div>
@@ -447,7 +447,7 @@ export function KnowledgeBaseDicts() {
           {docs.map((d) => (
             <div key={d.id} className="flex items-start justify-between gap-3 px-5 py-3.5">
               <div className="min-w-0">
-                <div className="text-[13.5px] font-medium text-slate-700">{d.title}</div>
+                <div className="text-[13px] font-medium text-slate-700">{d.title}</div>
                 <div className="mt-0.5 line-clamp-2 text-xs text-slate-500">{d.content}</div>
                 {d.tags.length > 0 && (
                   <div className="mt-1.5 flex flex-wrap gap-1">
@@ -506,11 +506,11 @@ export function DocTemplatesDicts() {
     }
   };
 
-  const inputClass = "w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm transition focus:border-brand-500 focus:bg-white focus:ring-2 focus:ring-brand-100 focus:outline-none";
+  const inputClass = "w-full rounded-lg border px-3 py-2 transition focus:border-brand-500 focus:outline-none text-[13px] border-slate-300/80 bg-white shadow-sm focus:ring-3 focus:ring-brand-100";
 
   return (
     <Card>
-      <CardHeader title="Шаблоны договоров" />
+      
       <div className="space-y-3 border-b border-slate-100 p-5">
         <p className="text-xs text-slate-400">
           ИИ сам предлагает подходящий шаблон (по истории клиента), автозаполняет реквизиты организации/контрагента из 1С/CRM и спрашивает только недостающие поля — предмет, сумму, срок и т.п. Плейсхолдеры в тексте — вида <code className="rounded bg-slate-100 px-1">{"{{subject}}"}</code>. Поля из списка «обязательные» ИИ ОБЯЗАТЕЛЬНО уточнит у пользователя, если их нет в тексте задачи.
@@ -526,7 +526,7 @@ export function DocTemplatesDicts() {
         <input placeholder="Обязательные поля через запятую (напр. subject, amount, term)" value={reqFieldsInput}
           onChange={(e) => setReqFieldsInput(e.target.value)} className={inputClass} />
         <button onClick={add} disabled={saving}
-          className="flex items-center gap-1.5 rounded-lg bg-brand-600 px-3.5 py-2 text-[13px] font-medium text-white hover:bg-brand-700 disabled:opacity-60">
+          className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-brand-700/20 bg-brand-600 px-3.5 text-[13px] font-medium whitespace-nowrap text-white shadow-sm transition-colors hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-50">
           <Plus className="size-3.5" /> {saving ? "Добавляем…" : "Добавить шаблон"}
         </button>
       </div>
@@ -537,7 +537,7 @@ export function DocTemplatesDicts() {
           {templates.map((t) => (
             <div key={t.id} className="flex items-start justify-between gap-3 px-5 py-3.5">
               <div className="min-w-0">
-                <div className="text-[13.5px] font-medium text-slate-700">{t.name}</div>
+                <div className="text-[13px] font-medium text-slate-700">{t.name}</div>
                 <div className="mt-0.5 text-xs text-slate-500">{t.category}</div>
                 {t.requiredFields.length > 0 && (
                   <div className="mt-1.5 flex flex-wrap gap-1">
@@ -563,14 +563,14 @@ export default function Dictionaries() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="flex items-center gap-2 text-2xl font-bold tracking-tight"><BookOpen className="size-6 text-brand-600" />Справочники</h1>
+        <h1 className="flex items-center gap-2 text-[22px] font-semibold tracking-tight"><BookOpen className="size-6 text-brand-600" />Справочники</h1>
         <p className="mt-0.5 text-sm text-slate-500">Все настраиваемые перечни CRM — в одном месте, по категориям</p>
       </div>
 
       <div className="flex gap-1 overflow-x-auto border-b border-slate-200 [scrollbar-width:none]">
         {CATS.map(({ id, label, icon: Icon }) => (
           <button key={id} onClick={() => setCat(id)}
-            className={`-mb-px flex shrink-0 items-center gap-2 rounded-t-lg border-b-2 px-3.5 py-2.5 text-[13.5px] font-medium whitespace-nowrap transition ${cat === id ? "border-brand-600 text-brand-600" : "border-transparent text-slate-500 hover:bg-slate-100 hover:text-slate-900"}`}>
+            className={`-mb-px flex shrink-0 items-center gap-2 rounded-t-lg border-b-2 px-3.5 py-2.5 text-[13px] font-medium whitespace-nowrap transition ${cat === id ? "border-brand-600 text-brand-600" : "border-transparent text-slate-500 hover:bg-slate-100 hover:text-slate-900"}`}>
             <Icon className="size-4" />{label}
           </button>
         ))}

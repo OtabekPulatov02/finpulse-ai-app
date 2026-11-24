@@ -4,8 +4,8 @@ import {
   ListTodo, Send,
 } from "lucide-react";
 import { Link } from "react-router-dom";
-import { Avatar, Badge, Card, CardHeader, PageHeader, toast } from "../components/ui";
-import { priorityTone, type Task } from "../data/demo";
+import { Avatar, Card, CardHeader, PageHeader, PriorityMark, StatTile, toast } from "../components/ui";
+import type { Task } from "../data/demo";
 import { displayStatus, isOverdue, setTaskStatus, useTasks } from "../store/tasks";
 import { useClients } from "../store/clients";
 import { hydrateEmployees, useEmployees } from "../store/employees";
@@ -51,10 +51,10 @@ export default function Dashboard() {
   const overdueTasks = tasks.filter(isOverdue);
 
   const kpi = [
-    { label: "Клиенты", value: String(clients.length), icon: Building2, tone: "text-brand-600 bg-brand-50", to: "/clients" },
-    { label: "Активные задачи", value: String(activeTasks.length), icon: ListTodo, tone: "text-violet-600 bg-violet-50", to: "/tasks" },
-    { label: "Выполненные", value: String(doneTasks.length), icon: CheckCircle2, tone: "text-emerald-600 bg-emerald-50", to: "/tasks?view=table" },
-    { label: "Просроченные", value: String(overdueTasks.length), icon: AlertCircle, tone: "text-red-600 bg-red-50", to: "/tasks?view=table" },
+    { label: "Клиенты", value: String(clients.length), icon: Building2, tone: "default" as const, to: "/clients", hint: "компаний на обслуживании" },
+    { label: "Активные задачи", value: String(activeTasks.length), icon: ListTodo, tone: "default" as const, to: "/tasks", hint: "новые и в работе" },
+    { label: "Выполненные", value: String(doneTasks.length), icon: CheckCircle2, tone: "default" as const, to: "/tasks?view=table", hint: "за всё время" },
+    { label: "Просроченные", value: String(overdueTasks.length), icon: AlertCircle, tone: overdueTasks.length ? "danger" as const : "default" as const, to: "/tasks?view=table", hint: overdueTasks.length ? "требуют внимания" : "всё в срок" },
   ];
 
   /* Выполненные сегодня задачи остаются в списке (зачёркнутые, внизу) до конца
@@ -104,24 +104,15 @@ export default function Dashboard() {
     n: tasks.filter((t) => t.assignee === name && (t.status === "Новая" || t.status === "В работе")).length,
   }));
   const maxLoad = Math.max(1, ...loadByEmployee.map((e) => e.n));
+  const avgLoad = loadByEmployee.length ? loadByEmployee.reduce((a, e) => a + e.n, 0) / loadByEmployee.length : 0;
 
   return (
     <div className="space-y-5">
       <PageHeader title="Дашборд" subtitle="Что горит сегодня и как загружена команда" />
 
-      <div className="grid grid-cols-4 gap-4 max-xl:grid-cols-2">
-        {kpi.map(({ label, value, icon: Icon, tone, to }) => (
-          <Link key={label} to={to} className="rounded-xl transition hover:-translate-y-0.5 hover:shadow-md focus:ring-2 focus:ring-brand-200 focus:outline-none">
-          <Card className="h-full p-5">
-            <div className="flex items-start justify-between">
-              <span className="text-[13px] font-medium text-slate-500">{label}</span>
-              <span className={`flex size-9 items-center justify-center rounded-lg ${tone}`}>
-                <Icon className="size-[18px]" />
-              </span>
-            </div>
-            <div className="mt-2 text-3xl font-bold tracking-tight">{value}</div>
-          </Card>
-          </Link>
+      <div className="grid grid-cols-4 gap-3 max-xl:grid-cols-2">
+        {kpi.map(({ label, value, icon: Icon, tone, to, hint }) => (
+          <StatTile key={label} label={label} value={value} hint={hint} icon={<Icon />} tone={tone} to={to} />
         ))}
       </div>
 
@@ -145,11 +136,11 @@ export default function Dashboard() {
                           else { setTaskStatus(t.id, "Выполнена"); toast("Задача отмечена выполненной"); }
                         }} />
                       <div className="min-w-0 flex-1">
-                        <div className={`truncate text-[13.5px] font-medium ${done ? "text-slate-400 line-through" : ""}`}>{t.title}</div>
+                        <div className={`truncate text-[13px] font-medium ${done ? "text-slate-400 line-through" : ""}`}>{t.title}</div>
                         <div className="text-xs text-slate-400">{t.client} · {t.assignee}</div>
                       </div>
                       {t.fromBot && <Send className="size-3.5 shrink-0 text-cyan-500 max-sm:hidden" />}
-                      <span className="max-sm:hidden"><Badge tone={priorityTone[t.priority]}>{t.priority}</Badge></span>
+                      {(t.priority === "Высокий" || t.priority === "Критический") && <span className="max-sm:hidden"><PriorityMark value={t.priority} /></span>}
                       <span className={`text-xs whitespace-nowrap ${dueLabel(t).cls}`}>{dueLabel(t).text}</span>
                     </div>
                   );
@@ -170,17 +161,19 @@ export default function Dashboard() {
               <div className="space-y-4 p-5">
                 {loadByEmployee.map(({ name, n }) => {
                   const pct = Math.round((n / maxLoad) * 100);
+                  /* перегруз — заметно выше среднего по команде, а не просто «самый загруженный» */
+                  const heavy = n >= 4 && n > 1.5 * avgLoad;
                   return (
                     <div key={name} className="flex items-center gap-3">
                       <Avatar name={name} />
                       <div className="min-w-0 flex-1">
                         <div className="mb-1 flex justify-between text-[13px]">
                           <span className="font-medium">{name}</span>
-                          <span className="font-semibold text-slate-500">{n} {n === 1 ? "задача" : "задачи"}</span>
+                          <span className="text-slate-500 tabular-nums">{n} {n % 10 === 1 && n % 100 !== 11 ? "задача" : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? "задачи" : "задач"}</span>
                         </div>
                         <div className="h-1.5 rounded-full bg-slate-100">
                           <div
-                            className={`h-full rounded-full ${pct > 85 ? "bg-red-500" : pct > 70 ? "bg-amber-500" : "bg-brand-500"}`}
+                            className={`h-full rounded-full ${heavy ? "bg-amber-500" : "bg-brand-500"}`}
                             style={{ width: `${pct}%` }}
                           />
                         </div>
@@ -202,7 +195,7 @@ export default function Dashboard() {
               <div className="relative">
                 <Donut data={donutData} />
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-2xl font-bold">{donutTotal}</span>
+                  <span className="text-2xl font-semibold">{donutTotal}</span>
                   <span className="text-[10px] text-slate-400">всего задач</span>
                 </div>
               </div>

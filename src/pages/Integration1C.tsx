@@ -116,7 +116,7 @@ export default function Integration1C({ embedded = false }: { embedded?: boolean
   return (
     <div className="space-y-5">
       {!embedded && (<div>
-        <h1 className="text-2xl font-bold tracking-tight">Интеграция с 1С</h1>
+        <h1 className="text-[22px] font-semibold tracking-tight">Интеграция с 1С</h1>
         <p className="mt-0.5 text-sm text-slate-500">Clobus.uz (1С:Фреш) · Бухгалтерия для Узбекистана 3.0 · абонент 6366</p>
       </div>)}
 
@@ -138,28 +138,28 @@ export default function Integration1C({ embedded = false }: { embedded?: boolean
           <div className="flex items-center gap-3">
             {apps && <span className="text-xs text-slate-400">{readyCount} из {apps.length} готовы к обмену</span>}
             <button onClick={doSyncAll} disabled={!readyCount || syncingAll || !!syncing}
-              className="flex items-center gap-1.5 rounded-lg border border-brand-200 bg-brand-50 px-3 py-1.5 text-[12.5px] font-medium text-brand-700 hover:bg-brand-100 disabled:opacity-40">
+              className="flex items-center gap-1.5 rounded-lg border border-brand-200 bg-brand-50 px-3 py-1.5 text-[12px] font-medium text-brand-700 hover:bg-brand-100 disabled:opacity-40">
               {syncingAll ? <RefreshCwOff className="size-3.5 animate-spin" /> : <RefreshCw className="size-3.5" />}
               {syncingAll ? "Обновляем все базы…" : "Обновить все базы"}
             </button>
             <button onClick={load} disabled={loading}
-              className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-[12.5px] font-medium hover:bg-slate-50 disabled:opacity-50">
+              className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-slate-300/80 bg-white px-3 text-[13px] font-medium whitespace-nowrap text-slate-800 shadow-sm transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50">
               <RefreshCw className={`size-3.5 ${loading ? "animate-spin" : ""}`} /> Проверить
             </button>
           </div>
         } />
         <div className="overflow-x-auto">
-          <table className="w-full text-[13.5px]">
+          <table className="dt">
             <thead>
-              <tr className="border-b border-slate-200 bg-slate-50 text-left text-xs font-semibold tracking-wider text-slate-400 uppercase">
-                <th className="px-4 py-3">База</th>
-                <th className="px-4 py-3">Код</th>
-                <th className="px-4 py-3">OData</th>
-                <th className="px-4 py-3">Объектов</th>
-                <th className="px-4 py-3" />
+              <tr>
+                <th className="px-4">База</th>
+                <th className="px-4">Код</th>
+                <th className="px-4">OData</th>
+                <th className="px-4">Объектов</th>
+                <th className="px-4" />
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody>
               {(apps ?? []).map((a) => (
                 <tr key={a.code} className="hover:bg-slate-50">
                   <td className="px-4 py-3">
@@ -177,7 +177,7 @@ export default function Integration1C({ embedded = false }: { embedded?: boolean
                   <td className="px-4 py-3 text-right">
                     <Menu trigger={
                       <button disabled={!a.ready || syncing === a.code}
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-[13px] font-medium hover:bg-slate-50 disabled:opacity-40">
+                        className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-slate-300/80 bg-white px-3 text-[13px] font-medium whitespace-nowrap text-slate-800 shadow-sm transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50">
                         {syncing === a.code ? <RefreshCw className="size-3.5 animate-spin" /> : <RefreshCw className="size-3.5" />}
                         {syncing === a.code ? "Загружаем…" : "Обновить из 1С"}
                         <ChevronDown className="size-3.5" />
@@ -201,9 +201,9 @@ export default function Integration1C({ embedded = false }: { embedded?: boolean
         <CardHeader title="Документы, созданные ИИ в 1С" action={<Database className="size-4 text-slate-400" />} />
         {doclog && doclog.length > 0 ? (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-[13px]">
+            <table className="dt">
               <thead>
-                <tr className="border-b border-slate-100 text-[11px] uppercase tracking-wide text-slate-400">
+                <tr>
                   <th className="px-4 py-2 font-medium">Задача</th>
                   <th className="px-4 py-2 font-medium">Компания</th>
                   <th className="px-4 py-2 font-medium">Тип</th>
@@ -214,7 +214,7 @@ export default function Integration1C({ embedded = false }: { embedded?: boolean
                   <th className="px-4 py-2 font-medium"></th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody>
                 {doclog.map((d) => (
                   <tr key={d.ref} className="hover:bg-slate-50">
                     <td className="px-4 py-2 text-slate-500">№{d.num}</td>
@@ -250,9 +250,9 @@ export default function Integration1C({ embedded = false }: { embedded?: boolean
         <CardHeader title="Календарь регламентированной отчётности" action={<Activity className="size-4 text-slate-400" />} />
         {reports && reports.length > 0 ? (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-[13px]">
+            <table className="dt">
               <thead>
-                <tr className="border-b border-slate-100 text-[11px] uppercase tracking-wide text-slate-400">
+                <tr>
                   <th className="px-4 py-2 font-medium">Отчёт</th>
                   <th className="px-4 py-2 font-medium">Компания</th>
                   <th className="px-4 py-2 font-medium">Периодичность</th>
@@ -261,7 +261,7 @@ export default function Integration1C({ embedded = false }: { embedded?: boolean
                   <th className="px-4 py-2 font-medium" />
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody>
                 {reports.map((r, i) => (
                   <tr key={i} className="hover:bg-slate-50">
                     <td className="px-4 py-2 font-medium">{r.name}</td>
@@ -280,7 +280,7 @@ export default function Integration1C({ embedded = false }: { embedded?: boolean
         ) : (
           <div className="p-8 text-center text-sm text-slate-400">Пока нет данных — нажмите «Обновить из 1С → Отчётность» у нужной базы выше</div>
         )}
-        <div className="flex items-start gap-2.5 border-t border-slate-100 px-5 py-3.5 text-[12.5px] text-slate-500">
+        <div className="flex items-start gap-2.5 border-t border-slate-100 px-5 py-3.5 text-[12px] text-slate-500">
           <CloudOff className="mt-0.5 size-4 shrink-0 text-slate-400" />
           {reportsNote || "Это ориентир, выведенный из истории и периодичности отчёта в 1С — НЕ официальный срок сдачи (1С его не хранит отдельным полем). Всегда сверяйте с реальным законодательным сроком."}
         </div>

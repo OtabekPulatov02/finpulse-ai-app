@@ -33,10 +33,11 @@ function SidebarNav({
 }) {
   return (
     <>
-      <div className="flex items-center justify-center px-5 pt-5 pb-4">
-        <img src="/logo-cutted.png" alt="Finpulse CRM" className="h-13 w-auto object-contain" />
+      <div className="flex h-14 shrink-0 items-center border-b border-slate-200 px-4">
+        <img src="/logo-cutted.png" alt="Finpulse CRM" className="h-9 w-auto object-contain" />
       </div>
-      <nav className="flex flex-1 flex-col gap-0.5 px-3 py-2">
+      <div className="eyebrow px-5 pt-5 pb-1.5">Работа</div>
+      <nav className="flex flex-1 flex-col gap-px px-3 pb-3">
         {nav.map(({ to, label, icon: Icon, count, end }) => (
           <NavLink
             key={to}
@@ -44,17 +45,21 @@ function SidebarNav({
             end={end}
             onClick={onNavigate}
             className={({ isActive }) =>
-              `flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                isActive ? "bg-brand-50 text-brand-600" : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+              `group flex h-8 items-center gap-2.5 rounded-md px-2.5 text-[13px] font-medium transition-colors ${
+                isActive ? "bg-slate-100 text-slate-900" : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
               }`
             }
           >
-            <Icon className="size-[18px]" />
-            {label}
-            {count && (
-              <span className="ml-auto rounded-full bg-slate-100 px-2 text-[11px] font-semibold text-slate-500">
-                {activeCount}
-              </span>
+            {({ isActive }) => (
+              <>
+                <Icon className={`size-4 ${isActive ? "text-brand-600" : "text-slate-400 group-hover:text-slate-600"}`} />
+                {label}
+                {count && activeCount > 0 && (
+                  <span className="ml-auto rounded bg-white px-1.5 text-[11px] leading-[18px] font-semibold text-slate-500 tabular-nums ring-1 ring-slate-200">
+                    {activeCount}
+                  </span>
+                )}
+              </>
             )}
           </NavLink>
         ))}
@@ -63,22 +68,26 @@ function SidebarNav({
             to="/settings"
             onClick={onNavigate}
             className={({ isActive }) =>
-              `mt-auto flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                isActive ? "bg-brand-50 text-brand-600" : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+              `group mt-auto flex h-8 items-center gap-2.5 rounded-md px-2.5 text-[13px] font-medium transition-colors ${
+                isActive ? "bg-slate-100 text-slate-900" : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
               }`
             }
           >
-            <Settings className="size-[18px]" />
-            Настройки
+            {({ isActive }) => (
+              <>
+                <Settings className={`size-4 ${isActive ? "text-brand-600" : "text-slate-400 group-hover:text-slate-600"}`} />
+                Настройки
+              </>
+            )}
           </NavLink>
         )}
       </nav>
       <div className="border-t border-slate-200 p-3">
-        <div className="flex cursor-pointer items-center gap-2.5 rounded-lg px-2 py-2 hover:bg-slate-100">
+        <div className="flex items-center gap-2.5 rounded-md px-2 py-1.5">
           <Avatar name={displayName} />
           <div className="min-w-0">
-            <div className="truncate text-[13px] font-semibold">{displayName}</div>
-            <div className="text-[11px] text-slate-400">{roleLabel}</div>
+            <div className="truncate text-[13px] font-medium text-slate-900">{displayName}</div>
+            <div className="truncate text-[11px] text-slate-500">{roleLabel}</div>
           </div>
         </div>
       </div>
@@ -171,7 +180,7 @@ export default function Layout() {
 
       {mobileNavOpen && (
         <div className="fixed inset-0 z-40 lg:hidden">
-          <div className="absolute inset-0 bg-slate-900/45 backdrop-blur-sm" onClick={() => setMobileNavOpen(false)} />
+          <div className="absolute inset-0 bg-slate-900/40" onClick={() => setMobileNavOpen(false)} />
           <aside className="relative flex h-full w-72 max-w-[80vw] flex-col bg-white shadow-2xl">
             <button
               onClick={() => setMobileNavOpen(false)}
@@ -188,12 +197,12 @@ export default function Layout() {
       )}
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-20 flex h-16 items-center gap-4 border-b border-slate-200 bg-white px-4 sm:px-6">
+        <header className="sticky top-0 z-20 flex h-14 items-center gap-3 border-b border-slate-200 bg-white/95 px-4 backdrop-blur sm:px-6">
           <button
             onClick={() => setMobileNavOpen(true)}
-            className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-900 lg:hidden"
+            aria-label="Меню" className="flex size-8 items-center justify-center rounded-md text-slate-500 hover:bg-slate-100 hover:text-slate-900 lg:hidden"
           >
-            <MenuIcon className="size-5" />
+            <MenuIcon className="size-[18px]" />
           </button>
           <div className={`relative w-full max-w-sm ${session?.role === "client" ? "invisible" : ""}`}>
             <Search className="absolute top-1/2 left-3 z-10 size-4 -translate-y-1/2 text-slate-400" />
@@ -204,18 +213,18 @@ export default function Layout() {
               onBlur={() => setTimeout(() => setSearchOpen(false), 150)}
               onKeyDown={(e) => { if (e.key === "Escape") { setSearchQ(""); setSearchOpen(false); } }}
               placeholder="Поиск клиентов и задач…"
-              className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pr-3 pl-9 text-[13px] transition focus:border-brand-500 focus:bg-white focus:ring-2 focus:ring-brand-100 focus:outline-none"
+              className="h-8 w-full rounded-md border border-slate-200 bg-slate-50 pr-3 pl-9 text-[13px] transition placeholder:text-slate-400 hover:border-slate-300 focus:border-brand-500 focus:bg-white focus:ring-3 focus:ring-brand-100 focus:outline-none"
             />
             {searchOpen && searchTerm && (
-              <div className="absolute top-full left-0 z-30 mt-1.5 max-h-96 w-full min-w-72 overflow-y-auto rounded-xl border border-slate-200 bg-white py-1.5 shadow-xl">
+              <div className="absolute top-full left-0 z-30 mt-1.5 max-h-96 w-full min-w-72 overflow-y-auto rounded-lg border border-slate-200 bg-white p-1 shadow-lg">
                 {hasSearchResults ? (
                   <>
                     {matchedClients.length > 0 && (
                       <>
-                        <div className="px-3.5 pt-1.5 pb-1 text-[11px] font-semibold tracking-wider text-slate-400 uppercase">Клиенты</div>
+                        <div className="eyebrow px-2.5 pt-1.5 pb-1">Клиенты</div>
                         {matchedClients.map((c) => (
                           <button key={c.id} onMouseDown={() => goToClient(c.id)}
-                            className="flex w-full items-center gap-2.5 px-3.5 py-2 text-left hover:bg-slate-50">
+                            className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-left hover:bg-slate-100">
                             <Avatar name={c.company.replace(/^(ООО|АО|ИП|MCHJ|OOO)\s*«?/, "")} />
                             <div className="min-w-0">
                               <div className="truncate text-[13px] font-medium">{c.company}</div>
@@ -227,11 +236,11 @@ export default function Layout() {
                     )}
                     {matchedTasks.length > 0 && (
                       <>
-                        <div className="px-3.5 pt-2 pb-1 text-[11px] font-semibold tracking-wider text-slate-400 uppercase">Задачи</div>
+                        <div className="eyebrow px-2.5 pt-2 pb-1">Задачи</div>
                         {matchedTasks.map((t) => (
                           <button key={t.id} onMouseDown={() => goToTask(t.id)}
-                            className="flex w-full items-start gap-2.5 px-3.5 py-2 text-left hover:bg-slate-50">
-                            <span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-lg bg-violet-50 text-violet-600">
+                            className="flex w-full items-start gap-2.5 rounded-md px-2.5 py-1.5 text-left hover:bg-slate-100">
+                            <span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-500">
                               <ListTodo className="size-3.5" />
                             </span>
                             <div className="min-w-0">
@@ -244,33 +253,33 @@ export default function Layout() {
                     )}
                   </>
                 ) : (
-                  <div className="px-3.5 py-6 text-center text-[12.5px] text-slate-400">Ничего не найдено</div>
+                  <div className="px-3.5 py-6 text-center text-[12px] text-slate-400">Ничего не найдено</div>
                 )}
               </div>
             )}
           </div>
           <div className="ml-auto flex items-center gap-1.5">
             <Menu trigger={
-              <button className="relative rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-900">
-                <Bell className="size-[18px]" />
+              <button aria-label="Уведомления" className="relative flex size-8 items-center justify-center rounded-md text-slate-500 hover:bg-slate-100 hover:text-slate-900">
+                <Bell className="size-4" />
                 {notifications.length > 0 && (
-                  <span className="absolute top-1.5 right-1.5 size-2 rounded-full border-2 border-white bg-red-500" />
+                  <span className="absolute top-1 right-1 size-2 rounded-full border-2 border-white bg-red-500" />
                 )}
               </button>
             }>
-              <div className="px-3.5 pt-1 pb-2 text-xs font-semibold tracking-wider text-slate-400 uppercase">Уведомления</div>
+              <div className="eyebrow px-2.5 pt-1.5 pb-1.5">Уведомления</div>
               {notifications.length ? notifications.map((n) => (
-                <div key={n.id + n.title} className="flex items-start gap-2.5 px-3.5 py-2.5 hover:bg-slate-50">
-                  <span className={`mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-lg ${n.tone}`}>
+                <div key={n.id + n.title} className="flex items-start gap-2.5 rounded-md px-2.5 py-2 hover:bg-slate-100">
+                  <span className={`mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-md ${n.tone}`}>
                     <n.icon className="size-3.5" />
                   </span>
                   <div>
-                    <div className="text-[12.5px] leading-snug font-medium">{n.title}</div>
+                    <div className="text-[12px] leading-snug font-medium">{n.title}</div>
                     <div className="mt-0.5 text-[11px] text-slate-400">{n.time}</div>
                   </div>
                 </div>
               )) : (
-                <div className="px-3.5 py-6 text-center text-[12.5px] text-slate-400">Новых уведомлений нет</div>
+                <div className="px-3.5 py-6 text-center text-[12px] text-slate-400">Новых уведомлений нет</div>
               )}
               {notifications.length > 0 && (
                 <>
@@ -282,7 +291,7 @@ export default function Layout() {
               )}
             </Menu>
             <Menu trigger={
-              <button className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-slate-100">
+              <button className="flex h-8 items-center gap-2 rounded-md pr-1.5 pl-1 hover:bg-slate-100">
                 <Avatar name={displayName} />
                 <span className="text-[13px] font-medium max-sm:hidden">{displayName.split(" ")[0]}</span>
                 <ChevronDown className="size-3.5 text-slate-400" />
@@ -302,7 +311,7 @@ export default function Layout() {
             </Menu>
           </div>
         </header>
-        <main className="mx-auto w-full max-w-7xl flex-1 p-4 sm:p-6">
+        <main className="mx-auto w-full max-w-[1280px] flex-1 px-4 py-5 sm:px-8 sm:py-7">
           <Outlet />
         </main>
         <Toaster />

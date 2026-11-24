@@ -6,7 +6,7 @@ import {
 import {
   Avatar, Badge, Card, ConfirmModal, Field, Input, Menu, MenuDivider,
   MenuItem, Modal, Select, Textarea, toast, type Tone,
- Button, PageHeader,
+ Button, FilterChips, PageHeader, plain,
 } from "../components/ui";
 import { useEmployees, hydrateEmployees } from "../store/employees";
 import { useSession } from "../auth";
@@ -86,9 +86,9 @@ function ClientFormModal({
     <Modal open={open} onClose={onClose} title={edit ? "Изменить клиента" : "Новый клиент"} wide
       footer={
         <>
-          <button onClick={onClose} className="rounded-lg border border-slate-200 px-4 py-2 text-[13px] font-medium hover:bg-slate-50">Отмена</button>
+          <button onClick={onClose} className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-slate-300/80 bg-white px-3.5 text-[13px] font-medium whitespace-nowrap text-slate-800 shadow-sm transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50">Отмена</button>
           <button disabled={saving} onClick={submit}
-            className="flex items-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2 text-[13px] font-medium text-white hover:bg-brand-700 disabled:opacity-60">
+            className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-brand-700/20 bg-brand-600 px-3.5 text-[13px] font-medium whitespace-nowrap text-white shadow-sm transition-colors hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-50">
             <Plus className="size-4" /> {saving ? "Сохраняем…" : edit ? "Сохранить" : "Создать клиента"}
           </button>
         </>
@@ -188,17 +188,19 @@ function AccessRequestsBlock() {
   };
 
   return (
-    <Card className="border-amber-200 bg-amber-50/50">
-      <div className="flex items-center gap-2.5 border-b border-amber-200/70 px-5 py-3.5">
-        <ShieldAlert className="size-[18px] text-amber-600" />
-        <h2 className="text-[14px] font-semibold text-amber-800">Заявки на доступ — нужна проверка ({reqs.length})</h2>
+    <Card className="overflow-hidden">
+      <div className="flex items-center gap-2.5 border-b border-slate-200 bg-amber-50 px-5 py-3">
+        <ShieldAlert className="size-4 text-amber-600" />
+        <h2 className="text-[14px] font-semibold text-slate-900">Заявки на доступ</h2>
+        <span className="rounded bg-amber-100 px-1.5 text-[11px] leading-[18px] font-semibold text-amber-800">{reqs.length}</span>
+        <span className="text-[12px] text-slate-500 max-sm:hidden">— проверьте и выдайте доступ к боту</span>
       </div>
-      <div className="divide-y divide-amber-100">
+      <div className="divide-y divide-slate-100">
         {reqs.map((r) => (
           <div key={r.id} className="flex flex-wrap items-center gap-3 px-5 py-3.5">
-            <div className="min-w-0 flex-1">
-              <div className="text-[13.5px] font-semibold">{r.company || "—"}</div>
-              <div className="mt-0.5 text-[12.5px] text-slate-600">
+            <div className="min-w-0 flex-1 max-sm:basis-full">
+              <div className="text-[13px] font-medium text-slate-900">{r.company || "—"}</div>
+              <div className="mt-0.5 text-[12px] text-slate-500">
                 {REQ_LABEL[r.type]}
                 {r.claimedPhone && <> · заявленный телефон: <b>{r.claimedPhone}</b></>}
                 {r.knownPhone && <> · в карточке: <b>{r.knownPhone}</b></>}
@@ -207,14 +209,8 @@ function AccessRequestsBlock() {
               </div>
             </div>
             <div className="flex shrink-0 gap-2">
-              <button disabled={busy === r.id} onClick={() => resolve(r, true)}
-                className="rounded-lg bg-emerald-600 px-3.5 py-1.5 text-[12.5px] font-medium text-white hover:bg-emerald-700 disabled:opacity-50">
-                Выдать доступ
-              </button>
-              <button disabled={busy === r.id} onClick={() => resolve(r, false)}
-                className="rounded-lg border border-slate-300 bg-white px-3.5 py-1.5 text-[12.5px] font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-50">
-                Отклонить
-              </button>
+              <Button size="sm" variant="secondary" disabled={busy === r.id} onClick={() => resolve(r, false)}>Отклонить</Button>
+              <Button size="sm" disabled={busy === r.id} onClick={() => resolve(r, true)}>Выдать доступ</Button>
             </div>
           </div>
         ))}
@@ -268,48 +264,43 @@ export default function Clients() {
       <AccessRequestsBlock />
 
       <Card>
-        <div className="flex flex-wrap gap-2.5 border-b border-slate-200 p-4">
+        <div className="flex flex-wrap items-center gap-3 border-b border-slate-200 px-4 py-3">
           <div className="relative min-w-56 max-w-xs flex-1">
             <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400" />
             <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Поиск по названию, телефону, должности" className="!pl-9" />
           </div>
-          <div className="flex flex-wrap items-center gap-1.5">
-            {(["Все статусы", ...STATUSES] as string[]).map((st) => {
-              const n = st === "Все статусы" ? clients.length : clients.filter((c) => c.status === st).length;
-              return (
-                <button key={st} onClick={() => setFStatus(st)}
-                  className={`rounded-full border px-3 py-1 text-[12.5px] font-medium transition ${fStatus === st ? "border-brand-200 bg-brand-50 text-brand-600" : "border-slate-200 text-slate-500 hover:border-slate-300"}`}>
-                  {st === "Все статусы" ? "Все" : STATUS_LABEL[st as (typeof STATUSES)[number]]} <span className="text-slate-400">{n}</span>
-                </button>
-              );
-            })}
-          </div>
+          <FilterChips value={fStatus} onChange={setFStatus}
+            items={(["Все статусы", ...STATUSES] as string[]).map((st) => ({
+              id: st,
+              label: st === "Все статусы" ? "Все" : STATUS_LABEL[st as (typeof STATUSES)[number]],
+              count: st === "Все статусы" ? clients.length : clients.filter((c) => c.status === st).length,
+            }))} />
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-[13.5px]">
+          <table className="dt">
             <thead>
-              <tr className="border-b border-slate-200 bg-slate-50 text-left text-xs font-semibold tracking-wider text-slate-400 uppercase">
-                <th className="px-4 py-3">Компания</th>
-                <th className="px-4 py-3">Телефон</th>
-                <th className="px-4 py-3">Ответственный</th>
-                <th className="px-4 py-3">Тариф</th>
-                <th className="px-4 py-3">Статус</th>
-                <th className="px-4 py-3" />
+              <tr>
+                <th className="px-4">Компания</th>
+                <th className="px-4">Телефон</th>
+                <th className="px-4">Ответственный</th>
+                <th className="px-4">Тариф</th>
+                <th className="px-4">Статус</th>
+                <th className="px-4" />
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody>
               {filtered.map((c) => (
-                <tr key={c.id} className="hover:bg-slate-50">
+                <tr key={c.id} onClick={() => setEditClient(c)} className="cursor-pointer">
                   <td className="px-4 py-3">
-                    <div className="font-semibold">{c.company}</div>
-                    {c.position && <div className="text-xs text-slate-400">{c.position}</div>}
+                    <div className="font-medium text-slate-900">{c.company}</div>
+                    {c.position && <div className="mt-0.5 text-[12px] text-slate-500">{plain(c.position)}</div>}
                   </td>
-                  <td className="px-4 py-3">{c.phone ? formatPhone(c.phone) : "—"}</td>
+                  <td className="px-4 py-3 whitespace-nowrap text-slate-700">{c.phone ? formatPhone(c.phone) : "—"}</td>
                   <td className="px-4 py-3">
                     {!c.assignedTo ? (
                       <span className="text-slate-400">не назначен</span>
                     ) : (
-                      <span className="flex items-center gap-2"><Avatar name={c.assignedTo} />{c.assignedTo}</span>
+                      <span className="flex items-center gap-2 whitespace-nowrap"><Avatar name={c.assignedTo} className="!size-6 !text-[10px]" />{c.assignedTo}</span>
                     )}
                   </td>
                   <td className="px-4 py-3">
@@ -332,7 +323,7 @@ export default function Clients() {
                     })()}
                   </td>
                   <td className="px-4 py-3"><Badge tone={statusTone[c.status] ?? "gray"}>{STATUS_LABEL[c.status] ?? c.status}</Badge></td>
-                  <td className="px-4 py-3 text-right">
+                  <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
                     <Menu trigger={
                       <button className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700">
                         <MoreHorizontal className="size-4" />

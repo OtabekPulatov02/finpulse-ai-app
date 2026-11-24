@@ -87,6 +87,14 @@ export function isoToDisplayDue(iso?: string | null): string {
   return `${m[3]}.${m[2]}`;
 }
 
+/* Приоритет приходит с сервера (правила распределения его ставят) —
+   раньше фронт всегда показывал «Средний». */
+const PRIORITIES_RU = ["Низкий", "Средний", "Высокий", "Критический"] as const;
+function normPriority(p?: string | null): Task["priority"] {
+  const v = String(p || "").trim().toLowerCase();
+  return (PRIORITIES_RU.find((x) => x.toLowerCase() === v) ?? "Средний") as Task["priority"];
+}
+
 function botTaskToTask(b: BotTask): Task {
   return {
     id: b.num,
@@ -95,13 +103,14 @@ function botTaskToTask(b: BotTask): Task {
     client: b.company ?? (b.type === "reminder" ? "Все клиенты" : "—"),
     assignee: b.assignee ?? "не назначен",
     status: fromBotStatus[b.status] ?? "Новая",
-    priority: "Средний",
+    priority: normPriority(b.priority),
     due: isoToDisplayDue(b.dueDate),
     dueDate: b.dueDate ?? null,
     doneAt: b.doneAt ?? null,
     fromBot: true,
     source: b.source === "crm" ? "crm" as const : "bot" as const,
     created: fmtTs(b.createdAt),
+    createdAt: b.createdAt ?? null,
     attachments: b.attachments ?? [],
     type: b.type ?? "task",
     thread: b.thread ?? [],

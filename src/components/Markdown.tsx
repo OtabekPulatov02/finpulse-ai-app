@@ -12,7 +12,7 @@ function inline(text: string, key: string): ReactNode[] {
     if (m.index > last) out.push(text.slice(last, m.index));
     const id = `${key}-${k++}`;
     if (m[1] !== undefined) out.push(<strong key={id} className="font-semibold">{inline(m[1], id)}</strong>);
-    else if (m[2] !== undefined) out.push(<code key={id} className="rounded bg-black/[0.06] px-1 py-0.5 font-mono text-[12.5px]">{m[2]}</code>);
+    else if (m[2] !== undefined) out.push(<code key={id} className="rounded bg-black/[0.06] px-1 py-0.5 font-mono text-[12px]">{m[2]}</code>);
     else if (m[3] !== undefined) out.push(<a key={id} href={m[4]} target="_blank" rel="noreferrer" className="text-brand-600 underline underline-offset-2 hover:text-brand-700">{m[3]}</a>);
     else if (m[5] !== undefined) out.push(<em key={id}>{m[5]}</em>);
     last = re.lastIndex;
@@ -39,7 +39,7 @@ export function Markdown({ text }: { text: string }) {
       const buf: string[] = []; i++;
       while (i < lines.length && !/^\s*```/.test(lines[i])) buf.push(lines[i++]);
       i++;
-      blocks.push(<pre key={key} className="overflow-x-auto rounded-lg bg-slate-900 px-3 py-2 font-mono text-[12.5px] text-slate-100">{buf.join("\n")}</pre>);
+      blocks.push(<pre key={key} className="overflow-x-auto rounded-lg bg-slate-900 px-3 py-2 font-mono text-[12px] text-slate-100">{buf.join("\n")}</pre>);
       continue;
     }
     if (isTableRow(line) && i + 1 < lines.length && isTableSep(lines[i + 1])) {

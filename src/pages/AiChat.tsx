@@ -228,7 +228,7 @@ export default function AiChat() {
                 <div className="flex max-w-xl flex-wrap justify-center gap-2">
                   {SUGGESTIONS.map((s) => (
                     <button key={s} onClick={() => void send(s)}
-                      className="rounded-full border border-slate-200 px-3.5 py-1.5 text-[13px] text-slate-600 transition hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700">
+                      className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[13px] text-slate-700 shadow-sm transition-colors hover:border-slate-300 hover:bg-slate-50">
                       {s}
                     </button>
                   ))}
@@ -256,7 +256,7 @@ export default function AiChat() {
                         <div className="mb-1.5 flex flex-wrap gap-1.5">
                           {m.steps.map((st, si) => (
                             <span key={si} title={st.args}
-                              className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11.5px] font-medium ${st.ok ? "border-slate-200 bg-white text-slate-500" : "border-red-200 bg-red-50 text-red-600"}`}>
+                              className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-medium ${st.ok ? "border-slate-200 bg-white text-slate-500" : "border-red-200 bg-red-50 text-red-600"}`}>
                               {st.ok ? <Check className="size-3" /> : <X className="size-3" />}{stepLabel(st.tool)}
                             </span>
                           ))}
@@ -277,7 +277,7 @@ export default function AiChat() {
                         <div className="mt-1 flex flex-wrap items-center gap-1.5">
                           {m.askOptions.map((opt, oi) => (
                             <button key={oi} type="button" disabled={busy} onClick={() => void send(opt)}
-                              className="rounded-full border border-brand-200 bg-white px-3 py-1.5 text-[13px] font-medium text-brand-700 hover:bg-brand-50 disabled:opacity-50">
+                              className="rounded-lg border border-brand-200 bg-white px-3 py-1.5 text-[13px] font-medium text-brand-700 hover:bg-brand-50 disabled:opacity-50">
                               {opt}
                             </button>
                           ))}
@@ -304,7 +304,7 @@ export default function AiChat() {
           {!!files.length && (
             <div className="flex flex-wrap gap-1.5 border-t border-slate-200 px-3.5 pt-3">
               {files.map((f, fi) => (
-                <span key={fi} className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-[12.5px]">
+                <span key={fi} className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-[12px]">
                   <FileText className="size-3.5 text-slate-400" />{f.name}
                   <button onClick={() => setFiles(files.filter((_, x) => x !== fi))} aria-label="Убрать файл" className="text-slate-400 hover:text-red-600"><X className="size-3.5" /></button>
                 </span>
@@ -325,11 +325,11 @@ export default function AiChat() {
               }}
               placeholder="Например: переведи задачу №106 в «Выполнена» и сообщи клиенту…"
               disabled={busy}
-              className="max-h-[200px] flex-1 resize-none rounded-xl border border-slate-200 px-4 py-2.5 text-[14px] leading-relaxed focus:border-brand-500 focus:ring-2 focus:ring-brand-100 focus:outline-none disabled:opacity-60"
+              className="max-h-[200px] flex-1 resize-none rounded-xl border px-4 py-2.5 text-[14px] leading-relaxed focus:border-brand-500 focus:outline-none disabled:opacity-60 border-slate-300/80 bg-white shadow-sm focus:ring-3 focus:ring-brand-100 placeholder:text-slate-400"
             />
             <Button onClick={() => void send()} disabled={busy || (!input.trim() && !files.length)} aria-label="Отправить" className="h-[42px]" icon={<Send className="size-4" />} />
           </div>
-          <div className="-mt-2 px-4 pb-2 text-[11.5px] text-slate-400">Enter — отправить, Shift+Enter — новая строка · 📎 фото или PDF документа — ИИ его прочитает</div>
+          <div className="-mt-2 px-4 pb-2 text-[11px] text-slate-400">Enter — отправить, Shift+Enter — новая строка · 📎 фото или PDF документа — ИИ его прочитает</div>
         </Card>
       </div>
 

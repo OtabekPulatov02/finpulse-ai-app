@@ -82,7 +82,7 @@ export function FilePreviewer() {
           {loading && (
             <div className="flex flex-col items-center gap-2 text-slate-400">
               <Loader2 className="size-6 animate-spin" />
-              <span className="text-[12.5px]">Загружаем файл…</span>
+              <span className="text-[12px]">Загружаем файл…</span>
             </div>
           )}
           {!loading && error && (
@@ -108,7 +108,7 @@ export function FilePreviewer() {
               <FileText className="size-10 text-slate-300" />
               <span className="text-[13px]">Предпросмотр недоступен для этого типа файла</span>
               <a href={url} download
-                className="flex items-center gap-1.5 rounded-lg bg-brand-600 px-3.5 py-2 text-[13px] font-medium text-white hover:bg-brand-700">
+                className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-brand-700/20 bg-brand-600 px-3.5 text-[13px] font-medium whitespace-nowrap text-white shadow-sm transition-colors hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-50">
                 <Download className="size-4" /> Скачать файл
               </a>
             </div>

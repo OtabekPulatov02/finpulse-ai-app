@@ -33,7 +33,7 @@ function InfoRow({ icon: Icon, label, value }: { icon: React.ComponentType<{ cla
       </span>
       <div className="min-w-0">
         <div className="text-[11px] font-medium text-slate-400">{label}</div>
-        <div className="truncate text-[13.5px] font-medium text-slate-700">{value || "—"}</div>
+        <div className="truncate text-[13px] font-medium text-slate-700">{value || "—"}</div>
       </div>
     </div>
   );
@@ -74,15 +74,15 @@ function StatsTab({ tasks }: { tasks: BotTask[] | null }) {
     <div className="grid grid-cols-3 gap-3 max-sm:grid-cols-1">
       <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
         <div className="flex items-center gap-2 text-xs font-medium text-slate-500"><ListTodo className="size-3.5" /> Всего создано</div>
-        <div className="mt-1.5 text-2xl font-bold tracking-tight">{created}</div>
+        <div className="mt-1.5 text-2xl font-semibold tracking-tight">{created}</div>
       </div>
       <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
         <div className="flex items-center gap-2 text-xs font-medium text-slate-500"><Clock3 className="size-3.5" /> В работе</div>
-        <div className="mt-1.5 text-2xl font-bold tracking-tight text-brand-600">{inProgress}</div>
+        <div className="mt-1.5 text-2xl font-semibold tracking-tight text-brand-600">{inProgress}</div>
       </div>
       <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
         <div className="flex items-center gap-2 text-xs font-medium text-slate-500"><CheckCircle2 className="size-3.5" /> Выполнено</div>
-        <div className="mt-1.5 text-2xl font-bold tracking-tight text-emerald-600">{done}</div>
+        <div className="mt-1.5 text-2xl font-semibold tracking-tight text-emerald-600">{done}</div>
       </div>
     </div>
   );
@@ -111,7 +111,7 @@ function FinanceTab({ balance, loading, error }: { balance: ClientBalanceResult 
       <div className="grid grid-cols-2 gap-3 max-sm:grid-cols-1">
         <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
           <div className="flex items-center gap-2 text-xs font-medium text-slate-500"><Banknote className="size-3.5" /> Оценка остатка средств</div>
-          <div className="mt-1.5 text-2xl font-bold tracking-tight">
+          <div className="mt-1.5 text-2xl font-semibold tracking-tight">
             {cash?.ok ? money(cash.estimate) : "—"}
           </div>
           <div className="mt-1 text-[11px] text-slate-400">
@@ -120,7 +120,7 @@ function FinanceTab({ balance, loading, error }: { balance: ClientBalanceResult 
         </div>
         <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
           <div className="flex items-center gap-2 text-xs font-medium text-slate-500"><Hash className="size-3.5" /> Выставлено счетов/реализаций</div>
-          <div className="mt-1.5 text-2xl font-bold tracking-tight">
+          <div className="mt-1.5 text-2xl font-semibold tracking-tight">
             {r?.ok ? money((r.invoicedTotal ?? 0) + (r.shippedTotal ?? 0)) : "—"}
           </div>
           <div className="mt-1 text-[11px] text-slate-400">
@@ -160,7 +160,7 @@ function PasswordTab() {
     }
   }
 
-  const inputClass = "w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm transition focus:border-brand-500 focus:bg-white focus:ring-2 focus:ring-brand-100 focus:outline-none";
+  const inputClass = "w-full rounded-lg border px-3 py-2 transition focus:border-brand-500 focus:outline-none text-[13px] border-slate-300/80 bg-white shadow-sm focus:ring-3 focus:ring-brand-100";
 
   return (
     <form onSubmit={submit} className="max-w-sm space-y-3">
@@ -172,7 +172,7 @@ function PasswordTab() {
       <input type="password" autoComplete="new-password" placeholder="Повторите новый пароль" value={confirm}
         onChange={(e) => setConfirm(e.target.value)} className={inputClass} />
       <button disabled={saving}
-        className="rounded-lg bg-brand-600 px-4 py-2 text-[13px] font-medium text-white hover:bg-brand-700 disabled:opacity-60">
+        className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-brand-700/20 bg-brand-600 px-3.5 text-[13px] font-medium whitespace-nowrap text-white shadow-sm transition-colors hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-50">
         {saving ? "Сохраняем…" : "Сохранить пароль"}
       </button>
     </form>
@@ -211,7 +211,7 @@ export default function ClientProfile() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Профиль</h1>
+        <h1 className="text-[22px] font-semibold tracking-tight">Профиль</h1>
         <p className="mt-0.5 text-sm text-slate-500">
           {client?.company ?? session?.company ?? session?.name} — данные компании, статистика по задачам и смена пароля.
         </p>

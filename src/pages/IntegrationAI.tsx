@@ -56,7 +56,7 @@ export default function IntegrationAI({ embedded = false }: { embedded?: boolean
   return (
     <div className="space-y-5">
       {!embedded && (<div>
-        <h1 className="text-2xl font-bold tracking-tight">AI-интеграция</h1>
+        <h1 className="text-[22px] font-semibold tracking-tight">AI-интеграция</h1>
         <p className="mt-0.5 text-sm text-slate-500">Автоматизация бухгалтерских операций до этапа отправки — ИИ готовит, бухгалтер проводит</p>
       </div>)}
 
@@ -67,7 +67,7 @@ export default function IntegrationAI({ embedded = false }: { embedded?: boolean
             : ping.key ? <Badge tone="yellow">ключ есть, ошибка вызова</Badge>
             : <Badge tone="gray">ключ не задан</Badge>
         } />
-        <div className="space-y-3 p-5 text-[13.5px]">
+        <div className="space-y-3 p-5 text-[13px]">
           <div className="flex items-center justify-between gap-3">
             <div>
               <div className="font-medium">API-ключ (OpenAI)</div>
@@ -80,12 +80,12 @@ export default function IntegrationAI({ embedded = false }: { embedded?: boolean
               <div className="font-medium">Модель</div>
               <div className="text-xs text-slate-400">Меняется переменной OPENAI_MODEL</div>
             </div>
-            <span className="font-mono text-[12.5px] text-slate-600">{ping?.model ?? "…"}</span>
+            <span className="font-mono text-[12px] text-slate-600">{ping?.model ?? "…"}</span>
           </div>
-          {ping?.error && <div className="rounded-lg bg-amber-50 px-3 py-2 text-[12.5px] text-amber-700">{ping.error}</div>}
+          {ping?.error && <div className="rounded-lg bg-amber-50 px-3 py-2 text-[12px] text-amber-700">{ping.error}</div>}
           <div className="flex justify-end border-t border-slate-100 pt-3">
             <button onClick={liveTest} disabled={testing || !ping?.key}
-              className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-3.5 py-2 text-[13px] font-medium hover:bg-slate-50 disabled:opacity-40">
+              className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-slate-300/80 bg-white px-3.5 text-[13px] font-medium whitespace-nowrap text-slate-800 shadow-sm transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50">
               <RefreshCw className={`size-4 ${testing ? "animate-spin" : ""}`} /> Проверить модель
             </button>
           </div>
@@ -101,8 +101,8 @@ export default function IntegrationAI({ embedded = false }: { embedded?: boolean
                 <f.icon className="size-[18px]" />
               </span>
               <div className="min-w-0 flex-1">
-                <div className="text-[13.5px] font-semibold">{f.title}</div>
-                <div className="mt-0.5 text-[12.5px] leading-relaxed text-slate-500">{f.desc}</div>
+                <div className="text-[13px] font-semibold">{f.title}</div>
+                <div className="mt-0.5 text-[12px] leading-relaxed text-slate-500">{f.desc}</div>
               </div>
               <Toggle checked={!!settings?.[f.key]} onChange={() => toggle(f.key)} />
             </div>
@@ -117,13 +117,13 @@ export default function IntegrationAI({ embedded = false }: { embedded?: boolean
             <AUTONOMY.icon className="size-[18px]" />
           </span>
           <div className="min-w-0 flex-1">
-            <div className="text-[13.5px] font-semibold">{AUTONOMY.title}</div>
-            <div className="mt-0.5 text-[12.5px] leading-relaxed text-slate-500">{AUTONOMY.desc}</div>
+            <div className="text-[13px] font-semibold">{AUTONOMY.title}</div>
+            <div className="mt-0.5 text-[12px] leading-relaxed text-slate-500">{AUTONOMY.desc}</div>
           </div>
           <Toggle checked={!!settings?.autoWork} onChange={() => toggle("autoWork")} />
         </div>
         {settings?.autoWork && (
-          <div className="border-t border-amber-100 bg-amber-50 px-5 py-3 text-[12.5px] text-amber-700">
+          <div className="border-t border-amber-100 bg-amber-50 px-5 py-3 text-[12px] text-amber-700">
             Включено: ИИ будет самостоятельно создавать непроведённые документы в 1С по новым заявкам без подтверждения на каждый шаг. Проверяйте карточки в 1С перед проведением.
           </div>
         )}
@@ -134,16 +134,16 @@ export default function IntegrationAI({ embedded = false }: { embedded?: boolean
         <div className="space-y-3 p-5">
           <textarea value={probe} onChange={(e) => setProbe(e.target.value)} rows={2}
             placeholder="Вставьте текст заявки клиента, например: «нужно оплатить счёт от СнабТорг на 4 500 000 сум до пятницы»"
-            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-[13.5px] focus:border-brand-500 focus:ring-2 focus:ring-brand-100 focus:outline-none" />
+            className="w-full rounded-lg border px-3 py-2 text-[13px] focus:border-brand-500 focus:outline-none border-slate-300/80 bg-white shadow-sm focus:ring-3 focus:ring-brand-100 placeholder:text-slate-400" />
           <div className="flex items-center justify-between gap-3">
             <span className="text-[13px] text-slate-500">{probeRes && <>Результат: <b>{probeRes}</b></>}</span>
             <button onClick={runProbe} disabled={!ping?.key || !probe.trim()}
-              className="rounded-lg bg-brand-600 px-4 py-2 text-[13px] font-medium text-white hover:bg-brand-700 disabled:opacity-40">
+              className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-brand-700/20 bg-brand-600 px-3.5 text-[13px] font-medium whitespace-nowrap text-white shadow-sm transition-colors hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-50">
               Классифицировать
             </button>
           </div>
         </div>
-        <div className="flex items-start gap-2.5 border-t border-slate-100 px-5 py-3.5 text-[12.5px] text-slate-500">
+        <div className="flex items-start gap-2.5 border-t border-slate-100 px-5 py-3.5 text-[12px] text-slate-500">
           <Bot className="mt-0.5 size-4 shrink-0 text-slate-400" />
           {settings?.autoWork
             ? "ИИ создаёт документы в 1С сам (при включённой автономности выше), но всегда НЕПРОВЕДЁННЫМИ — провести и отправить может только бухгалтер."

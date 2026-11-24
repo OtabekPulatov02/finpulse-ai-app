@@ -95,17 +95,17 @@ export default function SettingsHub() {
     <div className="space-y-5">
       <PageHeader title="Настройки" subtitle="Всё, что настраивается в системе, — в одном месте." />
       <div className="flex gap-6 max-lg:flex-col">
-        <aside className="w-60 shrink-0 space-y-3 max-lg:w-full lg:sticky lg:top-20 lg:self-start">
+        <aside className="w-56 shrink-0 space-y-3 max-lg:w-full lg:sticky lg:top-20 lg:self-start">
           <div className="relative">
             <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400" />
             <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Найти настройку…"
-              className="w-full rounded-lg border border-slate-200 bg-white py-2 pr-3 pl-9 text-[13.5px] focus:border-brand-500 focus:ring-2 focus:ring-brand-100 focus:outline-none" />
+              className="h-9 w-full rounded-lg border border-slate-300/80 pr-3 pl-9 text-[13px] placeholder:text-slate-400 focus:border-brand-500 focus:ring-3 focus:outline-none bg-white shadow-sm focus:ring-brand-100" />
             {q && (
-              <div className="absolute inset-x-0 top-full z-20 mt-1 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg">
+              <div className="absolute inset-x-0 top-full z-20 mt-1 overflow-hidden rounded-lg border border-slate-200 bg-white p-1 shadow-lg">
                 {hits.length ? hits.map(({ g, sec }) => (
                   <button key={g.id + sec.id} onClick={() => { setQ(""); navigate(`/settings/${g.id}#${sec.id}`); setTimeout(() => document.getElementById(sec.id)?.scrollIntoView({ behavior: "smooth" }), 200); }}
-                    className="block w-full px-3 py-2 text-left hover:bg-slate-50">
-                    <div className="text-[13.5px] font-medium">{sec.title}</div>
+                    className="block w-full rounded-md px-2.5 py-1.5 text-left hover:bg-slate-100">
+                    <div className="text-[13px] font-medium">{sec.title}</div>
                     <div className="text-[12px] text-slate-400">{g.label}</div>
                   </button>
                 )) : <div className="px-3 py-2.5 text-[13px] text-slate-400">Ничего не нашлось</div>}
@@ -115,17 +115,17 @@ export default function SettingsHub() {
           <nav className="flex flex-col gap-0.5 max-lg:flex-row max-lg:overflow-x-auto max-lg:[scrollbar-width:none]">
             {SETTINGS_GROUPS.map(({ id, label, icon: Icon }) => (
               <button key={id} onClick={() => navigate(`/settings/${id}`)}
-                className={`flex shrink-0 items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm font-medium whitespace-nowrap transition ${id === current.id ? "bg-brand-50 text-brand-600" : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"}`}>
-                <Icon className="size-[18px]" />{label}
+                className={`flex h-8 shrink-0 items-center gap-2.5 rounded-md px-2.5 text-left text-[13px] font-medium whitespace-nowrap transition-colors ${id === current.id ? "bg-white text-slate-900 shadow-sm ring-1 ring-slate-200" : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"}`}>
+                <Icon className={`size-4 ${id === current.id ? "text-brand-600" : "text-slate-400"}`} />{label}
               </button>
             ))}
           </nav>
         </aside>
 
-        <div className="min-w-0 flex-1 space-y-8">
+        <div className="min-w-0 flex-1 space-y-7">
           <div className="border-b border-slate-200 pb-3">
-            <h2 className="flex items-center gap-2 text-lg font-semibold"><current.icon className="size-5 text-brand-600" />{current.label}</h2>
-            <p className="text-[13.5px] text-slate-500">{current.desc}</p>
+            <h2 className="text-[17px] font-semibold text-slate-900">{current.label}</h2>
+            <p className="mt-0.5 text-[13px] text-slate-500">{current.desc}</p>
           </div>
           {current.sections.map((sec) => (
             <SettingsSection key={sec.id} id={sec.id} title={sec.title} hint={sec.hint}>{sec.render()}</SettingsSection>

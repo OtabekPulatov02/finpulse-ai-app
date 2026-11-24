@@ -79,7 +79,7 @@ export default function TelegramPanel() {
             <div>
               <div className="mb-1 font-medium text-slate-700">Webhook URL</div>
               <div className="flex gap-2">
-                <code className="flex-1 truncate rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 font-mono text-[12.5px]">{WEBHOOK}</code>
+                <code className="flex-1 truncate rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 font-mono text-[12px]">{WEBHOOK}</code>
                 <Button variant="secondary" size="sm" aria-label="Скопировать" icon={<Copy className="size-4" />}
                   onClick={() => { void navigator.clipboard?.writeText(WEBHOOK).then(() => toast("Скопировано")); }} />
               </div>

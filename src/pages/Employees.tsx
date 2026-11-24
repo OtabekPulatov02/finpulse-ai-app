@@ -18,7 +18,7 @@ function PasswordRevealModal({ password, onClose }: { password: string | null; o
   if (!password) return null;
   return (
     <Modal open onClose={onClose} title="Пароль создан"
-      footer={<button onClick={onClose} className="w-full rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700">Готово</button>}>
+      footer={<button onClick={onClose} className="w-full inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-brand-700/20 bg-brand-600 px-3.5 text-[13px] font-medium whitespace-nowrap text-white shadow-sm transition-colors hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-50">Готово</button>}>
       <p className="mb-3 text-[13px] text-slate-500">
         Сообщите сотруднику логин (его телефон) и пароль ниже — повторно пароль показать нельзя, только сбросить новый.
       </p>
@@ -72,9 +72,9 @@ function EmployeeFormModal({
     <Modal open={open} onClose={onClose} title={edit ? "Изменить сотрудника" : "Новый сотрудник"} wide
       footer={
         <>
-          <button onClick={onClose} className="rounded-lg border border-slate-200 px-4 py-2 text-[13px] font-medium hover:bg-slate-50">Отмена</button>
+          <button onClick={onClose} className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-slate-300/80 bg-white px-3.5 text-[13px] font-medium whitespace-nowrap text-slate-800 shadow-sm transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50">Отмена</button>
           <button disabled={saving} onClick={submit}
-            className="flex items-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2 text-[13px] font-medium text-white hover:bg-brand-700 disabled:opacity-60">
+            className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-brand-700/20 bg-brand-600 px-3.5 text-[13px] font-medium whitespace-nowrap text-white shadow-sm transition-colors hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-50">
             <UserPlus className="size-4" /> {saving ? "Сохраняем…" : edit ? "Сохранить" : "Создать доступ"}
           </button>
         </>
@@ -160,15 +160,15 @@ export default function Employees() {
           <div className="relative min-w-56 flex-1">
             <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400" />
             <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Поиск по имени или телефону"
-              className="w-full rounded-lg border border-slate-200 py-2 pr-3 pl-9 text-[13.5px] focus:border-brand-500 focus:ring-2 focus:ring-brand-100 focus:outline-none" />
+              className="w-full rounded-lg border py-2 pr-3 pl-9 text-[13px] focus:border-brand-500 focus:outline-none border-slate-300/80 bg-white shadow-sm focus:ring-3 focus:ring-brand-100 placeholder:text-slate-400" />
           </div>
-          <span className="text-[12.5px] text-slate-400">Нажмите на заголовок колонки, чтобы отсортировать</span>
+          <span className="text-[12px] text-slate-400">Нажмите на заголовок колонки, чтобы отсортировать</span>
         </div>
         {rows.length ? (
           <div className="overflow-x-auto">
-            <table className="w-full text-[13.5px]">
+            <table className="dt">
               <thead>
-                <tr className="border-b border-slate-200 bg-slate-50 text-left text-xs font-semibold tracking-wider text-slate-400 uppercase">
+                <tr>
                   {([["name", "Сотрудник"], ["phone", "Телефон (логин)"], ["role", "Роль"], ["clients", "Клиенты"], ["active", "В работе"], ["done", "Выполнено"], ["status", "Доступ"]] as const).map(([k, l]) => (
                     <th key={k} className={`px-4 py-3 ${["clients", "active", "done"].includes(k) ? "text-right" : ""}`}>
                       <button onClick={() => setSort(sort === k ? (`-${k}` as SortKey) : (k as SortKey))} className="inline-flex items-center gap-1 uppercase hover:text-slate-600">
@@ -176,17 +176,17 @@ export default function Employees() {
                       </button>
                     </th>
                   ))}
-                  <th className="w-10 px-4 py-3" />
+                  <th className="w-10 px-4" />
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody>
                 {rows.map(({ e, s }) => (
                   <tr key={e.id} className="hover:bg-slate-50">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2.5"><Avatar name={e.name} /><span className="font-medium">{e.name}</span></div>
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap text-slate-600">{e.phone ? formatPhone(e.phone) : "—"}</td>
-                    <td className="px-4 py-3"><Badge tone={e.role === "admin" ? "purple" : "blue"}>{ROLE_LABEL[e.role] ?? e.role}</Badge></td>
+                    <td className="px-4 py-3"><Badge tone={e.role === "admin" ? "blue" : "gray"}>{ROLE_LABEL[e.role] ?? e.role}</Badge></td>
                     <td className="px-4 py-3 text-right tabular-nums">{s.clients}</td>
                     <td className="px-4 py-3 text-right tabular-nums">{s.active}</td>
                     <td className="px-4 py-3 text-right tabular-nums">{s.done}</td>
