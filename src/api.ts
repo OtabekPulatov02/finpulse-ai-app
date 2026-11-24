@@ -671,8 +671,9 @@ export const deleteDocTemplate = (id: string) =>
 export interface AgentMessage { role: "user" | "assistant"; content: string }
 export interface AgentStep { tool: string; args: string; ok: boolean }
 
-export const aiAgent = (messages: AgentMessage[], chatId?: string | null) =>
-  aiPost<{ ok: boolean; reply: string; steps?: AgentStep[]; chatId?: string; error?: string; askOptions?: string[]; awaitingConfirmation?: boolean }>({ action: "agent", messages, chatId });
+export interface AgentUpload { kind: "upload"; name: string; mime: string; data: string }
+export const aiAgent = (messages: AgentMessage[], chatId?: string | null, attachments?: AgentUpload[]) =>
+  aiPost<{ ok: boolean; reply: string; steps?: AgentStep[]; chatId?: string; error?: string; askOptions?: string[]; awaitingConfirmation?: boolean }>({ action: "agent", messages, chatId, ...(attachments?.length ? { attachments } : {}) });
 
 export interface AiChatMeta { id: string; title: string; updatedAt: string; count: number }
 export interface StoredChatMsg { role: "user" | "assistant"; content: string; steps?: AgentStep[] }

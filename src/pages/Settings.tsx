@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link2, Plus, Trash2 } from "lucide-react";
-import { Badge, Card, CardHeader, Toggle, toast, type Tone } from "../components/ui";
+import { ArrowDown, ArrowUp, Link2, Plus, Trash2 } from "lucide-react";
+import { Badge, Card, CardHeader, SaveButton, Toggle, toast, useDirty, type Tone } from "../components/ui";
 import { fetchAssignRules, fetchBotSettings, fetchLogs, fetchLogsArchive, fetchNotifSettings, saveAssignRules, saveBotSettings, saveNotifSettings, type AssignRule, type BotSettings, type NotifSettings } from "../api";
 import { mapLog, type LogView } from "../lib/logs";
 import { useEmployees } from "../store/employees";
@@ -55,6 +55,7 @@ export function NotifTab() {
 export function BotTab() {
   const [set, setSet] = useState<BotSettings | null>(null);
   const [saving, setSaving] = useState(false);
+  const { dirty, markSaved } = useDirty(set);
   useEffect(() => {
     fetchBotSettings().then(setSet).catch(() => setSet({ slaHours: 3, workStart: 9, workEnd: 16, tzOffset: 5 }));
   }, []);
@@ -64,7 +65,7 @@ export function BotTab() {
     setSaving(true);
     try {
       const r1 = await saveBotSettings(set);
-      if (r1.ok) toast("Настройки бота сохранены — применяются сразу");
+      if (r1.ok) { markSaved(); toast("Настройки бота сохранены — применяются сразу"); }
       else toast(r1.error || "Не удалось сохранить");
     } finally { setSaving(false); }
   };
@@ -96,10 +97,7 @@ export function BotTab() {
         </div>
         <div className="flex items-center justify-between border-t border-slate-100 px-5 py-3.5">
           <span className="flex items-center gap-1.5 text-[12.5px] text-slate-400"><Link2 className="size-3.5" />Услуги в меню бота и должности клиентов — <a href="#services" className="font-medium text-brand-600 hover:underline">ниже на этой странице</a></span>
-          <button onClick={saveAll} disabled={saving}
-            className="rounded-lg bg-brand-600 px-4 py-2 text-[13px] font-medium text-white hover:bg-brand-700 disabled:opacity-50">
-            {saving ? "Сохранение…" : "Сохранить"}
-          </button>
+          <SaveButton dirty={dirty} saving={saving} onClick={() => void saveAll()} />
         </div>
       </Card>
     </div>
@@ -107,23 +105,32 @@ export function BotTab() {
 }
 
 const PRIORITY_OPTIONS = ["Низкий", "Средний", "Высокий", "Критический"];
-const SOURCE_LABEL: Record<AssignRule["source"], string> = { any: "Любой", telegram: "Telegram", crm: "CRM" };
+const rsel = "rounded-lg border border-slate-200 px-2.5 py-1.5 text-[13px] text-slate-800 focus:border-brand-500 focus:outline-none";
 
 export function RulesTab() {
   const [rules, setRules] = useState<AssignRule[] | null>(null);
   const [saving, setSaving] = useState(false);
   const employees = useEmployees();
+  const { dirty, markSaved } = useDirty(rules);
   useEffect(() => { fetchAssignRules().then(setRules).catch(() => setRules([])); }, []);
 
   const upd = (i: number, patch: Partial<AssignRule>) =>
     setRules((r) => r!.map((x, xi) => xi === i ? { ...x, ...patch } : x));
+  const move = (i: number, d: -1 | 1) => setRules((r) => {
+    const next = [...r!]; const [x] = next.splice(i, 1); next.splice(i + d, 0, x); return next;
+  });
+  /* «Проверить»: та же логика, что matchRule в lib/assign.js на сервере */
+  const [probe, setProbe] = useState("");
+  const [probeSrc, setProbeSrc] = useState<"telegram" | "crm">("telegram");
+  const hit = probe.trim() && rules ? rules.find((r) => r.enabled && (r.source === "any" || r.source === probeSrc)
+    && (!r.keywords.length || r.keywords.some((k) => k && probe.toLowerCase().includes(k.toLowerCase())))) : undefined;
 
   const save = async () => {
     if (!rules) return;
     setSaving(true);
     try {
       const r = await saveAssignRules(rules);
-      if (r.ok) toast("Правила сохранены — применяются к новым задачам сразу");
+      if (r.ok) { markSaved(); toast("Правила сохранены — применяются к новым задачам сразу"); }
       else toast(r.error || "Не удалось сохранить");
     } finally { setSaving(false); }
   };
@@ -141,47 +148,67 @@ export function RulesTab() {
       } />
       <div className="divide-y divide-slate-100">
         {rules.map((r, i) => (
-          <div key={r.id} className="flex flex-wrap items-start gap-3 px-5 py-4">
-            <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-xs font-bold text-brand-600">{i + 1}</span>
-            <div className="min-w-0 flex-1 space-y-2">
-              <div className="flex flex-wrap items-center gap-2">
-                <input value={r.name} onChange={(e) => upd(i, { name: e.target.value })}
-                  className="w-56 rounded-lg border border-slate-200 px-2.5 py-1.5 text-[13px] font-medium focus:border-brand-500 focus:outline-none" />
-                <select value={r.source} onChange={(e) => upd(i, { source: e.target.value as AssignRule["source"] })}
-                  className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-[13px] focus:border-brand-500 focus:outline-none">
-                  {(["any", "telegram", "crm"] as const).map((s) => <option key={s} value={s}>{SOURCE_LABEL[s]}</option>)}
-                </select>
-                <select value={r.priority ?? ""} onChange={(e) => upd(i, { priority: e.target.value || null })}
-                  className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-[13px] focus:border-brand-500 focus:outline-none">
-                  <option value="">Без приоритета</option>
-                  {PRIORITY_OPTIONS.map((p) => <option key={p} value={p}>{p}</option>)}
-                </select>
-                <input value={r.dueDays ?? ""} onChange={(e) => upd(i, { dueDays: e.target.value === "" ? null : Number(e.target.value.replace(/\D/g, "")) })}
-                  placeholder="Срок, дней" className="w-24 rounded-lg border border-slate-200 px-2.5 py-1.5 text-[13px] focus:border-brand-500 focus:outline-none" />
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <input value={r.keywords.join(", ")} placeholder="Ключевые слова через запятую (пусто = совпадает всегда)"
-                  onChange={(e) => upd(i, { keywords: e.target.value.split(",").map((v) => v.trimStart()) })}
-                  onBlur={(e) => upd(i, { keywords: e.target.value.split(",").map((v) => v.trim().toLowerCase()).filter(Boolean) })}
-                  className="min-w-64 flex-1 rounded-lg border border-slate-200 px-2.5 py-1.5 text-[13px] focus:border-brand-500 focus:outline-none" />
-                <select value={r.assignTo} onChange={(e) => upd(i, { assignTo: e.target.value })}
-                  className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-[13px] focus:border-brand-500 focus:outline-none">
-                  <option value="least_loaded">→ Наименее загруженный</option>
-                  {employees.map((e) => <option key={e.id} value={e.id}>→ {e.name}</option>)}
-                </select>
-              </div>
+          <div key={r.id} className={`space-y-2.5 px-5 py-4 ${r.enabled ? "" : "opacity-60"}`}>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-xs font-bold text-brand-600">{i + 1}</span>
+              <input value={r.name} onChange={(e) => upd(i, { name: e.target.value })} aria-label="Название правила"
+                className="min-w-40 flex-1 rounded-lg border border-transparent px-2 py-1 text-[14px] font-semibold hover:border-slate-200 focus:border-brand-500 focus:outline-none" />
+              <span className="flex items-center gap-2 text-[12.5px] text-slate-500"><Toggle checked={r.enabled} onChange={() => upd(i, { enabled: !r.enabled })} />{r.enabled ? "включено" : "выключено"}</span>
+              <button disabled={i === 0} onClick={() => move(i, -1)} title="Выше — проверяется раньше" className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 disabled:opacity-30"><ArrowUp className="size-4" /></button>
+              <button disabled={i === rules.length - 1} onClick={() => move(i, 1)} title="Ниже" className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 disabled:opacity-30"><ArrowDown className="size-4" /></button>
+              <button onClick={() => setRules(rules.filter((_, xi) => xi !== i))} title="Удалить правило" className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"><Trash2 className="size-4" /></button>
             </div>
-            <Toggle checked={r.enabled} onChange={() => upd(i, { enabled: !r.enabled })} />
-            <button onClick={() => setRules(rules.filter((_, xi) => xi !== i))} className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"><Trash2 className="size-4" /></button>
+            <div className="flex flex-wrap items-center gap-2 pl-9 text-[13.5px] text-slate-600">
+              <b className="font-semibold text-slate-800">Если</b> заявка
+              <select value={r.source} onChange={(e) => upd(i, { source: e.target.value as AssignRule["source"] })} className={rsel}>
+                <option value="any">из любого источника</option>
+                <option value="telegram">из Telegram-бота</option>
+                <option value="crm">создана в CRM</option>
+              </select>
+              и в тексте есть
+              <input value={r.keywords.join(", ")} placeholder="любое слово (пусто — всегда)"
+                onChange={(e) => upd(i, { keywords: e.target.value.split(",").map((v) => v.trimStart()) })}
+                onBlur={(e) => upd(i, { keywords: e.target.value.split(",").map((v) => v.trim().toLowerCase()).filter(Boolean) })}
+                className={`${rsel} min-w-56 flex-1`} />
+            </div>
+            <div className="flex flex-wrap items-center gap-2 pl-9 text-[13.5px] text-slate-600">
+              <b className="font-semibold text-slate-800">то</b> назначить
+              <select value={r.assignTo} onChange={(e) => upd(i, { assignTo: e.target.value })} className={rsel}>
+                <option value="least_loaded">наименее загруженному</option>
+                {employees.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
+              </select>
+              , приоритет
+              <select value={r.priority ?? ""} onChange={(e) => upd(i, { priority: e.target.value || null })} className={rsel}>
+                <option value="">не менять</option>
+                {PRIORITY_OPTIONS.map((p) => <option key={p} value={p}>{p.toLowerCase()}</option>)}
+              </select>
+              , срок
+              <input value={r.dueDays ?? ""} onChange={(e) => upd(i, { dueDays: e.target.value === "" ? null : Number(e.target.value.replace(/\D/g, "")) })}
+                placeholder="—" className={`${rsel} w-14 text-center`} />
+              дн.
+            </div>
           </div>
         ))}
+        {rules.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2 bg-slate-50 px-5 py-3.5 text-[13px]">
+            <span className="font-medium text-slate-600">Проверить:</span>
+            <input value={probe} onChange={(e) => setProbe(e.target.value)} placeholder="текст заявки, например «нужна ЭСФ для покупателя»"
+              className={`${rsel} min-w-64 flex-1 bg-white`} />
+            <select value={probeSrc} onChange={(e) => setProbeSrc(e.target.value as "telegram" | "crm")} className={`${rsel} bg-white`}>
+              <option value="telegram">из бота</option><option value="crm">из CRM</option>
+            </select>
+            {probe.trim() && (
+              <span className={hit ? "font-medium text-emerald-700" : "text-slate-500"}>
+                {hit ? `→ сработает правило ${rules.indexOf(hit) + 1} «${hit.name}»: ${hit.assignTo === "least_loaded" ? "наименее загруженному" : (employees.find((e) => e.id === hit.assignTo)?.name ?? "сотрудник")}` : "→ ни одно правило не сработает, задача останется без исполнителя"}
+              </span>
+            )}
+          </div>
+        )}
         {!rules.length && <p className="px-5 py-8 text-center text-sm text-slate-400">Правил пока нет — новые задачи остаются без исполнителя, как раньше.</p>}
       </div>
       <div className="flex items-center justify-between border-t border-slate-100 px-5 py-3.5">
         <span className="text-[12.5px] text-slate-400">Правила проверяются по порядку сверху вниз, срабатывает первое совпавшее. Применяются к новым задачам из CRM и Telegram-бота.</span>
-        <button onClick={save} disabled={saving} className="rounded-lg bg-brand-600 px-4 py-2 text-[13px] font-medium text-white hover:bg-brand-700 disabled:opacity-50">
-          {saving ? "Сохранение…" : "Сохранить"}
-        </button>
+        <SaveButton dirty={dirty} saving={saving} onClick={() => void save()} />
       </div>
     </Card>
   );

@@ -348,3 +348,31 @@ export function SettingsSection({ id, title, hint, children }: { id?: string; ti
     </section>
   );
 }
+
+/* ---------- Единое сохранение форм настроек ----------
+   useDirty: запоминает загруженное значение и говорит, есть ли изменения;
+   пока они есть — браузер предупредит при уходе со страницы.
+   SaveButton: активна только при изменениях, рядом «Не сохранено». */
+export function useDirty<T>(value: T | null | undefined): { dirty: boolean; markSaved: () => void } {
+  const base = useRef<string | null>(null);
+  const [, force] = useState(0);
+  const cur = value == null ? null : JSON.stringify(value);
+  if (base.current === null && cur !== null) base.current = cur;
+  const dirty = cur !== null && base.current !== null && cur !== base.current;
+  useEffect(() => {
+    if (!dirty) return;
+    const h = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = ""; };
+    window.addEventListener("beforeunload", h);
+    return () => window.removeEventListener("beforeunload", h);
+  }, [dirty]);
+  return { dirty, markSaved: () => { base.current = cur; force((n) => n + 1); } };
+}
+
+export function SaveButton({ dirty, saving, onClick, label = "Сохранить" }: { dirty: boolean; saving: boolean; onClick: () => void; label?: string }) {
+  return (
+    <span className="flex shrink-0 items-center gap-3">
+      {dirty && !saving && <span className="flex items-center gap-1.5 text-[12.5px] font-medium text-amber-600"><span className="size-1.5 rounded-full bg-amber-500" />Не сохранено</span>}
+      <Button size="sm" onClick={onClick} disabled={!dirty || saving}>{saving ? "Сохранение…" : label}</Button>
+    </span>
+  );
+}

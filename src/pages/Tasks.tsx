@@ -2,11 +2,12 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import {
   Archive, Calendar, Check, Copy, ExternalLink, Hash, Kanban, LayoutList, MoreHorizontal,
-  Paperclip, Pencil, Plus, RotateCcw, Search, Send, Sparkles, Trash2, X,
+  Paperclip, Pencil, Play, Plus, RotateCcw, Search, Send, Sparkles, Trash2, X,
 } from "lucide-react";
 import {
   Avatar, Badge, Card, ConfirmModal, Field, Input, Menu, MenuDivider,
   MenuItem, Modal, Select, Textarea, toast, useUrlParam,
+ Button, PageHeader,
 } from "../components/ui";
 import {
   EDITABLE_STATUSES, PRIORITIES, STATUSES,
@@ -507,7 +508,9 @@ export default function Tasks() {
   const tasks = useMemo(() => (mine === "1" && myName ? allTasks.filter((t) => t.assignee === myName) : allTasks), [allTasks, mine, myName]);
   const employeesForFilter = useEmployees();
   useEffect(() => { void hydrateEmployees(); }, []);
-  const [view, setView] = useUrlParam<"kanban" | "table">("view", "kanban", ["kanban", "table"]);
+  /* на телефоне по умолчанию список: пять колонок канбана там не помещаются */
+  const narrow = typeof window !== "undefined" && window.innerWidth < 640;
+  const [view, setView] = useUrlParam<"kanban" | "table">("view", narrow ? "table" : "kanban", ["kanban", "table"]);
 
   const [viewTaskId, setViewTaskId] = useState<number | null>(null);
   /* Берём саму задачу из живого стора по id, а не храним снимок объекта —
@@ -570,12 +573,10 @@ export default function Tasks() {
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Задачи</h1>
-          <p className="mt-0.5 text-sm text-slate-500">{active} активных · {overdue} просроченных · {done} выполнено</p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2.5">
+      <PageHeader
+        title="Задачи"
+        subtitle={`${active} активных · ${overdue} просроченных · ${done} выполнено`}
+        actions={<div className="flex flex-wrap items-center gap-2.5">
           <div className="flex rounded-lg border border-slate-200 bg-slate-50 p-0.5">
             {([["1", "Мои"], ["0", "Все"]] as const).map(([v, label]) => (
               <button key={v} onClick={() => setMine(v)} title={v === "1" ? `Задачи, где исполнитель — ${myName}` : "Задачи всей команды"}
@@ -593,12 +594,9 @@ export default function Tasks() {
               </button>
             ))}
           </div>
-          <button onClick={() => openCreate()}
-            className="flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-brand-700">
-            <Plus className="size-4" /> Создать задачу
-          </button>
-        </div>
-      </div>
+          <Button onClick={() => openCreate()} icon={<Plus className="size-4" />}>Создать задачу</Button>
+        </div>}
+      />
 
       {/* ---------- КАНБАН ---------- */}
       {view === "kanban" && (
@@ -714,24 +712,9 @@ export default function Tasks() {
                       <td className="px-4 py-3 whitespace-nowrap">
                         <span className="flex items-center gap-2"><Avatar name={t.assignee} className="!size-6 !text-[10px]" />{t.assignee}</span>
                       </td>
-                      <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
-                        {displayStatus(t) === "Архив" ? (
-                          <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-100 py-1 pr-3 pl-3 text-xs font-medium text-slate-500">
-                            Архив
-                          </span>
-                        ) : (
-                          <select
-                            value={t.status}
-                            onChange={(e) => { setTaskStatus(t.id, e.target.value as TaskStatus); toast("Статус обновлён — клиент уведомлён"); }}
-                            className={`cursor-pointer rounded-full border py-1 pr-7 pl-3 text-xs font-medium focus:outline-none ${
-                              { "Новая": "border-violet-200 bg-violet-50 text-violet-700",
-                                "В работе": "border-brand-200 bg-brand-50 text-brand-700",
-                                "Выполнена": "border-emerald-200 bg-emerald-50 text-emerald-700",
-                                "Отменено": "border-red-200 bg-red-50 text-red-700" }[t.status as "Новая" | "В работе" | "Выполнена" | "Отменено"]}`}>
-                            {EDITABLE_STATUSES.map((s) => <option key={s}>{s}</option>)}
-                          </select>
-                        )}
-                      </td>
+                      {/* статус — бейдж; меняется в карточке или через меню «…»: случайный клик
+                          по выпадающему списку раньше сразу уведомлял клиента (UX-аудит) */}
+                      <td className="px-4 py-3"><Badge tone={displayStatus(t) === "Архив" ? "gray" : statusTone[t.status as (typeof EDITABLE_STATUSES)[number]]}>{displayStatus(t)}</Badge></td>
                       <td className="px-4 py-3"><Badge tone={priorityTone[t.priority]}>{t.priority}</Badge></td>
                       <td className={`px-4 py-3 whitespace-nowrap ${isOverdue(t) ? "font-semibold text-red-600" : ""}`}>{t.due}</td>
                       <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
@@ -746,6 +729,9 @@ export default function Tasks() {
                             <MenuItem icon={<RotateCcw className="size-4" />} onClick={() => { setTaskStatus(t.id, "В работе"); toast("Задача возобновлена — статус «В работе»"); }}>Возобновить</MenuItem>
                           ) : (
                             <>
+                              {t.status === "Новая" && (
+                                <MenuItem icon={<Play className="size-4" />} onClick={() => { setTaskStatus(t.id, "В работе"); toast("Задача взята в работу — клиент уведомлён"); }}>Взять в работу</MenuItem>
+                              )}
                               {t.status !== "Выполнена" && (
                                 <MenuItem icon={<Check className="size-4" />} onClick={() => { setTaskStatus(t.id, "Выполнена"); toast("Задача отмечена выполненной"); }}>Выполнена</MenuItem>
                               )}

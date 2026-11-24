@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { BookOpen, Building2, CalendarDays, Database, ExternalLink, FileText, ListTodo, Plus, Sparkles, Trash2 } from "lucide-react";
-import { Badge, Card, CardHeader, toast } from "../components/ui";
+import { Badge, Card, CardHeader, SaveButton, toast, useDirty } from "../components/ui";
 import {
   addRagDoc, deleteRagDoc, fetchBotCategories, fetchBotPositions, fetchDicts, fetchRagDocs, fetchTariffs, fetch1cDeptSummary,
   saveBotCategories, saveBotPositions, saveDicts, saveTariffs,
@@ -82,9 +82,7 @@ function EditableListCard({
       {hint && <p className="border-t border-slate-100 px-5 py-2.5 text-xs text-slate-400">{hint}</p>}
       {dirty && (
         <div className="flex justify-end border-t border-slate-100 px-5 py-3">
-          <button onClick={save} disabled={saving} className="rounded-lg bg-brand-600 px-4 py-2 text-[13px] font-medium text-white hover:bg-brand-700 disabled:opacity-50">
-            {saving ? "Сохранение…" : "Сохранить"}
-          </button>
+          <SaveButton dirty={dirty} saving={saving} onClick={() => void save()} />
         </div>
       )}
     </Card>
@@ -95,6 +93,7 @@ function EditableListCard({
 export function TasksDicts({ only }: { only?: "cats" | "statuses" } = {}) {
   const [cats, setCats] = useState<BotCategory[] | null>(null);
   const [saving, setSaving] = useState(false);
+  const catsDirty = useDirty(cats);
   useEffect(() => { fetchBotCategories().then((c) => setCats(c ?? [])).catch(() => setCats([])); }, []);
 
   const save = async () => {
@@ -102,7 +101,7 @@ export function TasksDicts({ only }: { only?: "cats" | "statuses" } = {}) {
     setSaving(true);
     try {
       const r = await saveBotCategories(cats);
-      if (r.ok) toast("Категории сохранены");
+      if (r.ok) { catsDirty.markSaved(); toast("Категории сохранены"); }
       else toast(r.error || "Не удалось сохранить");
     } finally { setSaving(false); }
   };
@@ -136,9 +135,7 @@ export function TasksDicts({ only }: { only?: "cats" | "statuses" } = {}) {
             </div>
             <div className="flex items-center justify-between border-t border-slate-100 px-5 py-3.5">
               <span className="text-[12.5px] text-slate-400">Клиент видит категории табами при создании заявки в боте.</span>
-              <button onClick={save} disabled={saving} className="rounded-lg bg-brand-600 px-4 py-2 text-[13px] font-medium text-white hover:bg-brand-700 disabled:opacity-50">
-                {saving ? "Сохранение…" : "Сохранить"}
-              </button>
+              <SaveButton dirty={catsDirty.dirty} saving={saving} onClick={() => void save()} />
             </div>
           </>
         )}
@@ -176,6 +173,7 @@ export function ClientsDicts({ only }: { only?: "positions" | "tariffs" } = {}) 
   const [positions, setPositions] = useState<string[] | null>(null);
   const [tariffs, setTariffs] = useState<Tariff[] | null>(null);
   const [savingTariffs, setSavingTariffs] = useState(false);
+  const tariffsDirty = useDirty(tariffs);
   useEffect(() => {
     fetchBotPositions().then(setPositions).catch(() => setPositions([]));
     fetchTariffs().then(setTariffs).catch(() => setTariffs([]));
@@ -189,6 +187,7 @@ export function ClientsDicts({ only }: { only?: "positions" | "tariffs" } = {}) 
     setSavingTariffs(true);
     try {
       const r = await saveTariffs(tariffs);
+      if (r.ok) tariffsDirty.markSaved();
       if (r.ok) toast("Тарифы сохранены — лимиты применяются со следующего пересчёта");
       else toast(r.error || "Не удалось сохранить");
     } finally { setSavingTariffs(false); }
@@ -243,9 +242,7 @@ export function ClientsDicts({ only }: { only?: "positions" | "tariffs" } = {}) 
             </div>
             <div className="flex items-center justify-between border-t border-slate-100 px-5 py-3.5">
               <span className="text-[12.5px] text-slate-400">Пустой лимит = безлимит. «Операция» — выполненная задача клиента за календарный месяц.</span>
-              <button onClick={saveTariffsNow} disabled={savingTariffs} className="rounded-lg bg-brand-600 px-4 py-2 text-[13px] font-medium text-white hover:bg-brand-700 disabled:opacity-50">
-                {savingTariffs ? "Сохранение…" : "Сохранить"}
-              </button>
+              <SaveButton dirty={tariffsDirty.dirty} saving={savingTariffs} onClick={() => void saveTariffsNow()} />
             </div>
           </>
         )}
@@ -292,11 +289,7 @@ function ReminderTypeLabelsCard({ dicts, onSaved }: { dicts: Dicts; onSaved: (d:
       </div>
       <div className="flex items-center justify-between border-t border-slate-100 px-5 py-3.5">
         <span className="text-[12.5px] text-slate-400">Два системных типа напоминания (налог/платёж) — можно переименовать подпись, но не добавить третий: логика формы и цвета в календаре завязаны именно на эти два.</span>
-        {dirty && (
-          <button onClick={save} disabled={saving} className="rounded-lg bg-brand-600 px-4 py-2 text-[13px] font-medium text-white hover:bg-brand-700 disabled:opacity-50">
-            {saving ? "Сохранение…" : "Сохранить"}
-          </button>
-        )}
+        <SaveButton dirty={dirty} saving={saving} onClick={() => void save()} />
       </div>
     </Card>
   );

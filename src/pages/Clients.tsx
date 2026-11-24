@@ -6,6 +6,7 @@ import {
 import {
   Avatar, Badge, Card, ConfirmModal, Field, Input, Menu, MenuDivider,
   MenuItem, Modal, Select, Textarea, toast, type Tone,
+ Button, PageHeader,
 } from "../components/ui";
 import { useEmployees, hydrateEmployees } from "../store/employees";
 import { useSession } from "../auth";
@@ -258,19 +259,11 @@ export default function Clients() {
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Клиенты</h1>
-          <p className="mt-0.5 text-sm text-slate-500">
-            {clients.length} {clients.length === 1 ? "компания" : "компаний"}
-            {pendingCount > 0 && ` · ${pendingCount} ожидает активации`}
-          </p>
-        </div>
-        <button onClick={() => setCreateOpen(true)}
-          className="flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-brand-700">
-          <Plus className="size-4" /> Добавить клиента
-        </button>
-      </div>
+      <PageHeader
+        title="Клиенты"
+        subtitle={<>{clients.length} {clients.length === 1 ? "компания" : "компаний"}{pendingCount > 0 && ` · ${pendingCount} ожидает активации`}</>}
+        actions={<Button onClick={() => setCreateOpen(true)} icon={<Plus className="size-4" />}>Добавить клиента</Button>}
+      />
 
       <AccessRequestsBlock />
 
@@ -280,10 +273,17 @@ export default function Clients() {
             <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400" />
             <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Поиск по названию, телефону, должности" className="!pl-9" />
           </div>
-          <Select value={fStatus} onChange={(e) => setFStatus(e.target.value)} className="!w-auto">
-            <option>Все статусы</option>
-            {STATUSES.map((s) => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}
-          </Select>
+          <div className="flex flex-wrap items-center gap-1.5">
+            {(["Все статусы", ...STATUSES] as string[]).map((st) => {
+              const n = st === "Все статусы" ? clients.length : clients.filter((c) => c.status === st).length;
+              return (
+                <button key={st} onClick={() => setFStatus(st)}
+                  className={`rounded-full border px-3 py-1 text-[12.5px] font-medium transition ${fStatus === st ? "border-brand-200 bg-brand-50 text-brand-600" : "border-slate-200 text-slate-500 hover:border-slate-300"}`}>
+                  {st === "Все статусы" ? "Все" : STATUS_LABEL[st as (typeof STATUSES)[number]]} <span className="text-slate-400">{n}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-[13.5px]">
@@ -314,13 +314,22 @@ export default function Clients() {
                   </td>
                   <td className="px-4 py-3">
                     <div>{c.tariff || "—"}</div>
-                    {usage[c.id] && (
-                      <div className={`mt-0.5 text-[11px] ${usage[c.id].over ? "font-semibold text-red-600" : "text-slate-400"}`}>
-                        {usage[c.id].used}/{usage[c.id].limit == null ? "∞" : usage[c.id].limit} опер.
-                        {usage[c.id].extraPacks > 0 && ` · +${usage[c.id].extraPacks} пак.`}
-                        {usage[c.id].over && " · сверхлимит!"}
-                      </div>
-                    )}
+                    {usage[c.id] && (() => {
+                      const u = usage[c.id];
+                      const pct = u.limit ? Math.min(100, Math.round((u.used / u.limit) * 100)) : 0;
+                      return (
+                        <div className="mt-1 w-32" title={`${u.used} из ${u.limit ?? "∞"} операций в этом месяце${u.extraPacks ? `, доп. пакетов: ${u.extraPacks}` : ""}`}>
+                          {u.limit != null && (
+                            <div className="h-1.5 rounded-full bg-slate-100">
+                              <div className={`h-full rounded-full ${u.over || pct >= 100 ? "bg-red-500" : pct >= 90 ? "bg-amber-500" : "bg-brand-500"}`} style={{ width: `${pct}%` }} />
+                            </div>
+                          )}
+                          <div className={`mt-0.5 text-[11px] ${u.over ? "font-semibold text-red-600" : "text-slate-500"}`}>
+                            {u.used} из {u.limit == null ? "∞" : u.limit} опер.{u.extraPacks > 0 && ` · +${u.extraPacks} пак.`}{u.over && " · сверх лимита"}
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </td>
                   <td className="px-4 py-3"><Badge tone={statusTone[c.status] ?? "gray"}>{STATUS_LABEL[c.status] ?? c.status}</Badge></td>
                   <td className="px-4 py-3 text-right">

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { AlertCircle, Building2, CheckCircle2, Download, FilePlus2, Star } from "lucide-react";
-import { Avatar, Badge, Card, CardHeader, toast } from "../components/ui";
+import { Avatar, Badge, Button, Card, CardHeader, PageHeader, toast } from "../components/ui";
 import { fetchNpsStats, type NpsMonth } from "../api";
 import { useClients } from "../store/clients";
 import { hydrateEmployees, useEmployees } from "../store/employees";
@@ -39,7 +39,11 @@ export default function Analytics() {
       const own = tasks.filter((t) => t.assignee === e.name);
       const done = own.filter((t) => t.status === "Выполнена");
       const overdue = own.filter(isOverdue).length;
-      const ontime = done.length ? Math.round(((done.length - overdue) / done.length) * 100) : 0;
+      /* «в срок» = доля выполненных не позже срока (раньше вычитались открытые
+         просрочки из выполненных — получалось 0–50% без смысла) */
+      const withDue = done.filter((t) => t.dueDate && t.doneAt);
+      const inTime = withDue.filter((t) => String(t.doneAt).slice(0, 10) <= String(t.dueDate).slice(0, 10)).length;
+      const ontime = withDue.length ? Math.round((inTime / withDue.length) * 100) : -1;
       return { name: e.name, done: done.length, overdue, ontime, total: own.length };
     })
     .filter((p) => p.total > 0)
@@ -77,15 +81,11 @@ export default function Analytics() {
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Аналитика</h1>
-          <p className="mt-0.5 text-sm text-slate-500">Показатели на {new Date().toLocaleDateString("ru-RU")}</p>
-        </div>
-        <button onClick={exportCsv} className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium hover:bg-slate-50">
-          <Download className="size-4" />Скачать отчёт (CSV)
-        </button>
-      </div>
+      <PageHeader
+        title="Аналитика"
+        subtitle={`Показатели команды на ${new Date().toLocaleDateString("ru-RU")}`}
+        actions={<Button variant="secondary" onClick={exportCsv} icon={<Download className="size-4" />}>Скачать отчёт (CSV)</Button>}
+      />
 
       <div className="grid grid-cols-4 gap-4 max-xl:grid-cols-2 max-sm:grid-cols-1">
         {kpi.map(({ label, value, icon: Icon, tone }) => (
@@ -118,7 +118,7 @@ export default function Analytics() {
                     <td className="px-5 py-3"><span className="flex items-center gap-2.5 font-medium"><Avatar name={p.name} />{p.name}</span></td>
                     <td className="px-4 py-3 font-semibold">{p.done}</td>
                     <td className="px-4 py-3">{p.overdue}</td>
-                    <td className="px-4 py-3">{p.done ? <Badge tone={p.ontime >= 90 ? "green" : "yellow"}>{p.ontime}%</Badge> : "—"}</td>
+                    <td className="px-4 py-3" title="Доля выполненных задач со сроком, закрытых не позже срока">{p.ontime >= 0 ? <Badge tone={p.ontime >= 90 ? "green" : p.ontime >= 70 ? "yellow" : "red"}>{p.ontime}%</Badge> : <span className="text-slate-400">нет сроков</span>}</td>
                   </tr>
                 ))}
               </tbody>
@@ -151,7 +151,7 @@ export default function Analytics() {
         <CardHeader title="Удовлетворённость клиентов (NPS)" />
         {nps.some((m) => m.count > 0) ? (
           <div className="grid grid-cols-6 gap-3 p-5 max-sm:grid-cols-2">
-            {[...nps].reverse().map((m) => (
+            {[...nps].reverse().filter((m, i, arr) => m.count > 0 || arr.slice(0, i).some((x) => x.count > 0)).map((m) => (
               <div key={m.month} className="rounded-xl border border-slate-200 bg-white p-3.5 text-center">
                 <div className="text-[11px] font-medium text-slate-400">{m.month}</div>
                 <div className="mt-1 flex items-center justify-center gap-1 text-lg font-bold">

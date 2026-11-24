@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { AlarmClockPlus, ChevronLeft, ChevronRight, CreditCard, ExternalLink, FileStack, ListTodo, Plus, Receipt, Send, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { Badge, Card, CardHeader, ConfirmModal, Modal, toast } from "../components/ui";
+import { Badge, Button, Card, CardHeader, ConfirmModal, Modal, PageHeader, toast } from "../components/ui";
 import { useTasks } from "../store/tasks";
 import { hydrateClients, useClients } from "../store/clients";
 import { createCalendarEvent, hydrateCalendarEvents, removeCalendarEvent, useCalendarEvents } from "../store/calendarEvents";
@@ -184,15 +184,11 @@ export default function Calendar() {
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Календарь</h1>
-          <p className="mt-0.5 text-sm text-slate-500">Отчёты, налоги и платежи фирм — с напоминаниями от бота</p>
-        </div>
-        <button onClick={() => setShowNew(true)} className="flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-brand-700">
-          <AlarmClockPlus className="size-4" /> Напоминание
-        </button>
-      </div>
+      <PageHeader
+        title="Календарь"
+        subtitle="Отчёты, налоги и платежи фирм — бот напомнит о сроке в группе"
+        actions={<Button onClick={() => setShowNew(true)} icon={<AlarmClockPlus className="size-4" />}>Новое напоминание</Button>}
+      />
 
       <div className="grid grid-cols-[1fr_320px] items-start gap-4 max-xl:grid-cols-1">
         <Card>
@@ -222,10 +218,17 @@ export default function Calendar() {
                 <button key={i} onClick={() => setDay(d)}
                   className={`flex min-h-24 flex-col gap-0.5 border-r border-b border-slate-100 p-1.5 text-left transition hover:bg-slate-50 ${other ? "bg-slate-50/60 opacity-60" : ""}`}>
                   <span className={`flex size-6 items-center justify-center rounded-full text-xs font-semibold ${isToday ? "bg-brand-600 text-white" : "text-slate-500"}`}>{d.getDate()}</span>
-                  {evs.slice(0, 3).map((e) => (
-                    <span key={e.key} className={`truncate rounded border-l-2 px-1.5 py-px text-[10.5px] font-medium ${pill[e.type]}`}>{e.title}</span>
+                  {/* название целиком в 2 строки + подсказка при наведении; на телефоне — цветные точки */}
+                  {evs.slice(0, 2).map((e) => (
+                    <span key={e.key} title={e.title}
+                      className={`line-clamp-2 rounded border-l-2 px-1.5 py-0.5 text-[11px] leading-tight font-medium break-words max-md:hidden ${pill[e.type]}`}>{e.title}</span>
                   ))}
-                  {evs.length > 3 && <span className="px-1.5 text-[10px] text-slate-400">ещё {evs.length - 3}</span>}
+                  {evs.length > 2 && <span className="px-1.5 text-[11px] font-medium text-slate-500 max-md:hidden">+ ещё {evs.length - 2}</span>}
+                  {!!evs.length && (
+                    <span className="flex flex-wrap gap-1 px-1 md:hidden">
+                      {evs.slice(0, 4).map((e) => <span key={e.key} className={`size-2 rounded-full border-l-0 ${pill[e.type].split(" ")[0].replace("-50", "-500")}`} />)}
+                    </span>
+                  )}
                 </button>
               );
             })}
@@ -353,10 +356,10 @@ export default function Calendar() {
             </div>
             {nRepeat !== "Однократно" && (
               <div className="col-span-2">
-                <label className="mb-1.5 block text-[13px] font-medium">Сколько раз заранее заполнить календарь</label>
+                <label className="mb-1.5 block text-[13px] font-medium">Сколько повторов показать в календаре</label>
                 <input value={nCount} onChange={(e) => setNCount(e.target.value.replace(/\D/g, ""))}
-                  placeholder="Пусто = напоминание бессрочное, продвигается само по одному разу" className={inp} />
-                <p className="mt-1.5 text-xs text-slate-400">Если указать число — календарь сразу заполнится этим числом конкретных дат вперёд (например, 12 = год вперёд при «Ежемесячно»). Если оставить пустым — как раньше: одно напоминание, которое сдвигается на следующую дату после срабатывания.</p>
+                  placeholder="Например, 12" className={inp} />
+                <p className="mt-1.5 text-xs text-slate-400">Например, 12 при «Ежемесячно» — даты на год вперёд. Пусто — одно напоминание, которое само переносится на следующую дату.</p>
               </div>
             )}
           </div>

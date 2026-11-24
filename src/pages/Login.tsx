@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { loginRequest, guestLoginRequest } from "../api";
+
+const SHOW_GUEST = import.meta.env.VITE_SHOW_GUEST_LOGIN === "1"
+  || /localhost|127\.0\.0\.1|demo/i.test(typeof window !== "undefined" ? window.location.hostname : "");
 import { setSession, type Role } from "../auth";
 import { resetTasksStore } from "../store/tasks";
 import { resetClientsStore } from "../store/clients";
@@ -116,6 +119,10 @@ export default function Login() {
           </button>
         </form>
 
+        {/* Демо-вход — только на демо-стенде/локально или если явно включён
+            VITE_SHOW_GUEST_LOGIN=1: на боевом адресе с реальными клиентами он
+            сбивал с толку (UX-аудит 23.11.2026). */}
+        {SHOW_GUEST && (<>
         <div className="my-4 flex items-center gap-3 text-[11px] text-slate-400">
           <div className="h-px flex-1 bg-slate-200" /> или <div className="h-px flex-1 bg-slate-200" />
         </div>
@@ -127,6 +134,7 @@ export default function Login() {
         >
           Войти как гость (демо-доступ)
         </button>
+        </>)}
 
         <p className="mt-5 text-center text-[12px] text-slate-400">
           Пароль для клиента приходит в Telegram-боте после регистрации.

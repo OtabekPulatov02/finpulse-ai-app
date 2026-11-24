@@ -1,15 +1,27 @@
 import { useEffect, useRef, useState } from "react";
 import {
-  AlertTriangle, Bot, Check, Copy, History, MessageSquarePlus, RotateCcw, Send, Sparkles, Square, Trash2, X,
+  AlertTriangle, Bot, Check, Copy, FileText, History, MessageSquarePlus, Paperclip, RotateCcw, Send, Sparkles, Square, Trash2, X,
 } from "lucide-react";
 import { Button, Card, ConfirmModal, PageHeader } from "../components/ui";
 import { Markdown } from "../components/Markdown";
 import {
   aiAgent, clearAllAiChats, deleteAiChat, fetchAiChat, fetchAiChats,
-  type AgentMessage, type AgentStep, type AiChatMeta,
+  type AgentMessage, type AgentStep, type AgentUpload, type AiChatMeta,
 } from "../api";
+import { toast } from "../components/ui";
 
-interface ChatItem { role: "user" | "assistant"; content: string; steps?: AgentStep[]; askOptions?: string[]; error?: boolean }
+/* Файлы для ИИ: фото, PDF, txt, csv. Запрос к серверу ограничен ~4,5 МБ, а base64
+   раздувает файл на треть, поэтому суммарно до 3 МБ. */
+const ACCEPT = ".jpg,.jpeg,.png,.webp,.pdf,.txt,.csv";
+const MAX_TOTAL = 3 * 1024 * 1024;
+const readAsBase64 = (f: File) => new Promise<string>((res, rej) => {
+  const r = new FileReader();
+  r.onload = () => res(String(r.result).split(",")[1] || "");
+  r.onerror = () => rej(r.error);
+  r.readAsDataURL(f);
+});
+
+interface ChatItem { role: "user" | "assistant"; content: string; steps?: AgentStep[]; askOptions?: string[]; error?: boolean; files?: string[] }
 
 /* Шаги агента — человеческими словами, а не именами функций */
 const STEP_LABEL: Record<string, string> = {
@@ -64,6 +76,15 @@ export default function AiChat() {
   const [busySince, setBusySince] = useState<number | null>(null);
   const [now, setNow] = useState(Date.now());
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [files, setFiles] = useState<File[]>([]);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const addFiles = (list: FileList | null) => {
+    if (!list) return;
+    const next = [...files, ...Array.from(list)].slice(0, 4);
+    const total = next.reduce((s, f) => s + f.size, 0);
+    if (total > MAX_TOTAL) { toast("Файлы больше 3 МБ вместе — уменьшите фото или приложите меньше файлов"); return; }
+    setFiles(next);
+  };
   const [confirm, setConfirm] = useState<{ kind: "one"; id: string } | { kind: "all" } | null>(null);
   const reqId = useRef(0);
   const endRef = useRef<HTMLDivElement>(null);
@@ -104,17 +125,20 @@ export default function AiChat() {
   };
 
   const send = async (text?: string, base?: ChatItem[]) => {
-    const q = (text ?? input).trim();
+    const attached = text === undefined ? files : [];
+    const q = (text ?? input).trim() || (attached.length ? "Что в этом документе?" : "");
     if (!q || busy) return;
     setInput("");
+    setFiles([]);
     const prev = (base ?? items).filter((i) => !i.error);
-    const next: ChatItem[] = [...prev, { role: "user", content: q }];
+    const next: ChatItem[] = [...prev, { role: "user", content: q, ...(attached.length ? { files: attached.map((f) => f.name) } : {}) }];
     setItems(next);
     const my = ++reqId.current;
     setBusySince(Date.now()); setNow(Date.now());
     try {
       const history: AgentMessage[] = next.map((i) => ({ role: i.role, content: i.content }));
-      const r = await aiAgent(history, activeId);
+      const uploads: AgentUpload[] = await Promise.all(attached.map(async (f) => ({ kind: "upload" as const, name: f.name, mime: f.type || "application/octet-stream", data: await readAsBase64(f) })));
+      const r = await aiAgent(history, activeId, uploads);
       if (my !== reqId.current) return; // пользователь нажал «Остановить»
       setItems([...next, r.ok
         ? { role: "assistant", content: r.reply, steps: r.steps, askOptions: r.askOptions }
@@ -214,7 +238,14 @@ export default function AiChat() {
             {items.map((m, i) => (
               <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
                 {m.role === "user" ? (
-                  <div className="max-w-[80%] rounded-2xl bg-brand-600 px-4 py-2.5 text-[14px] leading-relaxed whitespace-pre-wrap text-white">{m.content}</div>
+                  <div className="max-w-[80%] rounded-2xl bg-brand-600 px-4 py-2.5 text-[14px] leading-relaxed whitespace-pre-wrap text-white">
+                    {!!m.files?.length && (
+                      <div className="mb-1.5 flex flex-wrap gap-1.5">
+                        {m.files.map((n) => <span key={n} className="inline-flex items-center gap-1 rounded-md bg-white/15 px-2 py-0.5 text-[12px]"><FileText className="size-3.5" />{n}</span>)}
+                      </div>
+                    )}
+                    {m.content}
+                  </div>
                 ) : (
                   <div className="flex max-w-[90%] min-w-0 gap-2.5">
                     <span className={`mt-1 flex size-7 shrink-0 items-center justify-center rounded-full ${m.error ? "bg-red-50 text-red-600" : "bg-brand-50 text-brand-600"}`}>
@@ -270,7 +301,20 @@ export default function AiChat() {
             )}
             <div ref={endRef} />
           </div>
-          <div className="flex items-end gap-2 border-t border-slate-200 p-3.5">
+          {!!files.length && (
+            <div className="flex flex-wrap gap-1.5 border-t border-slate-200 px-3.5 pt-3">
+              {files.map((f, fi) => (
+                <span key={fi} className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-[12.5px]">
+                  <FileText className="size-3.5 text-slate-400" />{f.name}
+                  <button onClick={() => setFiles(files.filter((_, x) => x !== fi))} aria-label="Убрать файл" className="text-slate-400 hover:text-red-600"><X className="size-3.5" /></button>
+                </span>
+              ))}
+            </div>
+          )}
+          <div className={`flex items-end gap-2 p-3.5 ${files.length ? "" : "border-t border-slate-200"}`}>
+            <input ref={fileRef} type="file" accept={ACCEPT} multiple hidden onChange={(e) => { addFiles(e.target.files); e.target.value = ""; }} />
+            <Button variant="secondary" aria-label="Прикрепить файл" title="Прикрепить фото, PDF, txt или csv — ИИ прочитает документ"
+              className="h-[42px]" disabled={busy} onClick={() => fileRef.current?.click()} icon={<Paperclip className="size-4" />} />
             <textarea
               ref={inputRef}
               rows={1}
@@ -283,9 +327,9 @@ export default function AiChat() {
               disabled={busy}
               className="max-h-[200px] flex-1 resize-none rounded-xl border border-slate-200 px-4 py-2.5 text-[14px] leading-relaxed focus:border-brand-500 focus:ring-2 focus:ring-brand-100 focus:outline-none disabled:opacity-60"
             />
-            <Button onClick={() => void send()} disabled={busy || !input.trim()} aria-label="Отправить" className="h-[42px]" icon={<Send className="size-4" />} />
+            <Button onClick={() => void send()} disabled={busy || (!input.trim() && !files.length)} aria-label="Отправить" className="h-[42px]" icon={<Send className="size-4" />} />
           </div>
-          <div className="-mt-2 px-4 pb-2 text-[11.5px] text-slate-400">Enter — отправить, Shift+Enter — новая строка</div>
+          <div className="-mt-2 px-4 pb-2 text-[11.5px] text-slate-400">Enter — отправить, Shift+Enter — новая строка · 📎 фото или PDF документа — ИИ его прочитает</div>
         </Card>
       </div>
 
