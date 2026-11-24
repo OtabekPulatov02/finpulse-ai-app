@@ -114,7 +114,7 @@ export default function SettingsHub() {
         } />
 
       {/* группы — горизонтальные вкладки сверху; липнут под шапкой при прокрутке */}
-      <div className="sticky top-14 z-10 -mx-4 bg-white/90 px-4 backdrop-blur sm:-mx-8 sm:px-8">
+      <div className="sticky top-14 z-10 -mx-4 bg-white px-4 sm:-mx-8 sm:px-8">
         <Tabs items={SETTINGS_GROUPS.map(({ id, label, icon }) => ({ id, label, icon }))} value={current.id} onChange={(id) => navigate(`/settings/${id}`)} />
       </div>
 

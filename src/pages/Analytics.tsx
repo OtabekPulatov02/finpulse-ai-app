@@ -124,7 +124,7 @@ export default function Analytics() {
         <Card className="col-span-3 max-xl:col-span-1">
           <CardHeader title="Производительность сотрудников" subtitle={`Выполнено ${periodWord}; просрочки и «в работе» — на сегодня`} />
           {perf.length ? (
-            <table className="dt">
+            <div className="overflow-x-auto"><table className="dt">
               <thead>
                 <tr>
                   <th className="px-5">Сотрудник</th>
@@ -145,7 +145,7 @@ export default function Analytics() {
                   </tr>
                 ))}
               </tbody>
-            </table>
+            </table></div>
           ) : (
             <p className="px-5 py-8 text-center text-sm text-slate-400">Пока нет задач, назначенных сотрудникам.</p>
           )}

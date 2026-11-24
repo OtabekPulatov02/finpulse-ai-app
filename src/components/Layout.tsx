@@ -209,7 +209,7 @@ export default function Layout() {
       {/* контент — «вставкой» на фоне сайдбара (как sidebar inset в shadcn/ui) */}
       <div className="flex min-w-0 flex-1 flex-col lg:h-screen lg:py-2 lg:pr-2">
        <div id="app-scroll" className="flex min-w-0 flex-1 flex-col bg-white lg:overflow-y-auto lg:rounded-xl lg:border lg:border-slate-200 lg:shadow-sm">
-        <header className="sticky top-0 z-20 flex h-14 items-center gap-3 border-b border-slate-200 bg-white/90 px-4 backdrop-blur sm:px-6">
+        <header className="sticky top-0 z-20 flex h-14 shrink-0 items-center gap-3 border-b border-slate-200 bg-white/90 px-4 backdrop-blur sm:px-6">
           <button
             onClick={() => setMobileNavOpen(true)}
             aria-label="Меню" className="flex size-8 items-center justify-center rounded-md text-slate-500 hover:bg-slate-100 hover:text-slate-900 lg:hidden"

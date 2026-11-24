@@ -58,7 +58,7 @@ export function AreaChart({ labels, series, height = 220, format = (v: number) =
           <span key={t} className="absolute left-0 -translate-y-1/2 text-[10px] text-slate-400 tabular-nums" style={{ top: `${(y(t) / H) * 100}%` }}>{t}</span>
         ))}
         {labels.map((l, i) => (i % step === 0 || i === n - 1) && (
-          <span key={i} className="absolute bottom-0 -translate-x-1/2 text-[10px] whitespace-nowrap text-slate-400" style={{ left: `${(x(i) / W) * 100}%` }}>{l}</span>
+          <span key={i} className={`absolute bottom-0 text-[10px] whitespace-nowrap text-slate-400 ${i === 0 ? "" : i === n - 1 ? "-translate-x-full" : "-translate-x-1/2"}`} style={{ left: `${(x(i) / W) * 100}%` }}>{l}</span>
         ))}
         {hover !== null && series.map((s) => (
           <span key={s.key} className="absolute size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white shadow" style={{ left: `${hoverLeft}%`, top: `${(y(s.values[hover]) / H) * 100}%`, background: s.color }} />

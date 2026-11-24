@@ -570,7 +570,7 @@ export default function Tasks() {
 
       {/* ---------- КАНБАН ---------- */}
       {view === "kanban" && (
-        <div className="grid grid-cols-5 items-start gap-2.5 pb-2 max-lg:grid-cols-[repeat(5,240px)] max-lg:overflow-x-auto">
+        <div className="grid grid-cols-5 items-start gap-2.5 pb-2 max-xl:grid-cols-[repeat(5,250px)] max-xl:overflow-x-auto">
           {columns.map(({ status, dot, ring }) => {
             const items = tasks.filter((t) => displayStatus(t) === status);
             const isOver = overCol === status && dragTask?.status !== status;
@@ -603,7 +603,7 @@ export default function Tasks() {
                         onClick={() => setViewTask(t)}
                         className={`cursor-grab p-3 transition select-none active:cursor-grabbing ${prioBorder[t.priority]} ${
                           dragId === t.id ? "opacity-40 shadow-lg" : "hover:border-slate-300 hover:shadow"}`}>
-                        <div className="flex items-center gap-1.5 text-[11px] font-medium text-slate-400">
+                        <div className="flex flex-wrap items-center gap-1.5 text-[11px] font-medium text-slate-400">
                           <Hash className="size-3" />{t.id}
                           {t.type === "reminder" && <Badge tone="cyan">напоминание</Badge>}
                         </div>
