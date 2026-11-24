@@ -1,10 +1,11 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
+import { AreaChart } from "../components/Charts";
 import {
   AlertCircle, ArrowRight, Building2, Check, CheckCircle2,
   ListTodo, Send,
 } from "lucide-react";
 import { Link } from "react-router-dom";
-import { Avatar, Card, CardHeader, PageHeader, PriorityMark, StatTile, toast } from "../components/ui";
+import { Avatar, Card, CardHeader, PageHeader, PriorityMark, Segmented, StatTile, toast, useUrlParam } from "../components/ui";
 import type { Task } from "../data/demo";
 import { displayStatus, isOverdue, setTaskStatus, useTasks } from "../store/tasks";
 import { useClients } from "../store/clients";
@@ -50,12 +51,49 @@ export default function Dashboard() {
   const doneTasks = tasks.filter((t) => t.status === "Выполнена");
   const overdueTasks = tasks.filter(isOverdue);
 
+  /* Тренды «эта неделя к прошлой» по ISO-датам создания и выполнения */
+  const DAY = 86400000, now = Date.now();
+  const inRange = (iso: string | null | undefined, fromDays: number, toDays: number) => {
+    if (!iso) return false; const t = Date.parse(iso); return t > now - fromDays * DAY && t <= now - toDays * DAY;
+  };
+  const created7 = tasks.filter((t) => inRange(t.createdAt, 7, 0)).length;
+  const createdPrev = tasks.filter((t) => inRange(t.createdAt, 14, 7)).length;
+  const done7 = doneTasks.filter((t) => inRange(t.doneAt, 7, 0)).length;
+  const donePrev = doneTasks.filter((t) => inRange(t.doneAt, 14, 7)).length;
+  const trendOf = (cur: number, prev: number, upIsGood: boolean) => {
+    if (cur === prev) return { text: "0%", dir: "flat" as const };
+    const dir = cur > prev ? "up" as const : "down" as const;
+    /* на малых числах проценты бессмысленны (+600%) — показываем разницу в штуках */
+    const text = prev < 5 ? `${cur > prev ? "+" : "−"}${Math.abs(cur - prev)}` : `${cur > prev ? "+" : "−"}${Math.round((Math.abs(cur - prev) / prev) * 100)}%`;
+    return { text, dir, good: dir === "up" ? upIsGood : !upIsGood };
+  };
+  const pending = clients.filter((c) => c.status === "pending").length;
+
   const kpi = [
-    { label: "Клиенты", value: String(clients.length), icon: Building2, tone: "default" as const, to: "/clients", hint: "компаний на обслуживании" },
-    { label: "Активные задачи", value: String(activeTasks.length), icon: ListTodo, tone: "default" as const, to: "/tasks", hint: "новые и в работе" },
-    { label: "Выполненные", value: String(doneTasks.length), icon: CheckCircle2, tone: "default" as const, to: "/tasks?view=table", hint: "за всё время" },
-    { label: "Просроченные", value: String(overdueTasks.length), icon: AlertCircle, tone: overdueTasks.length ? "danger" as const : "default" as const, to: "/tasks?view=table", hint: overdueTasks.length ? "требуют внимания" : "всё в срок" },
+    { label: "Клиенты", value: String(clients.length), icon: Building2, tone: "default" as const, to: "/clients",
+      footer: pending ? <>Ожидают активации: {pending}</> : <>Все активированы <Check className="text-emerald-600" /></>, hint: "компаний на обслуживании" },
+    { label: "Активные задачи", value: String(activeTasks.length), icon: ListTodo, tone: "default" as const, to: "/tasks",
+      trend: trendOf(created7, createdPrev, true), footer: <>Поступило за неделю: {created7}</>, hint: "новые и в работе" },
+    { label: "Выполненные", value: String(doneTasks.length), icon: CheckCircle2, tone: "default" as const, to: "/tasks?view=table",
+      trend: trendOf(done7, donePrev, true), footer: <>Закрыто за неделю: {done7}</>, hint: "всего выполнено" },
+    { label: "Просроченные", value: String(overdueTasks.length), icon: AlertCircle, tone: overdueTasks.length ? "danger" as const : "default" as const, to: "/tasks?view=table",
+      footer: overdueTasks.length ? <>Требуют внимания <AlertCircle className="text-red-500" /></> : <>Всё в срок <Check className="text-emerald-600" /></>, hint: "открытые задачи после срока" },
   ];
+
+  /* График «Поток задач»: поступило и выполнено по дням */
+  const [range, setRange] = useUrlParam<"7" | "30" | "90">("range", "30", ["7", "30", "90"]);
+  const chart = useMemo(() => {
+    const days = Number(range);
+    const start = new Date(); start.setHours(0, 0, 0, 0); start.setDate(start.getDate() - (days - 1));
+    const idx = (iso?: string | null) => { if (!iso) return -1; const d = new Date(iso); d.setHours(0, 0, 0, 0); return Math.round((d.getTime() - start.getTime()) / DAY); };
+    const created = Array(days).fill(0), done = Array(days).fill(0);
+    for (const t of tasks) {
+      const i = idx(t.createdAt); if (i >= 0 && i < days) created[i]++;
+      const j = t.status === "Выполнена" ? idx(t.doneAt) : -1; if (j >= 0 && j < days) done[j]++;
+    }
+    const labels = Array.from({ length: days }, (_, i) => new Date(start.getTime() + i * DAY).toLocaleDateString("ru-RU", { day: "numeric", month: "short" }).replace(".", ""));
+    return { labels, created, done, sumC: created.reduce((a, b) => a + b, 0), sumD: done.reduce((a, b) => a + b, 0) };
+  }, [tasks, range]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /* Выполненные сегодня задачи остаются в списке (зачёркнутые, внизу) до конца
      дня — и пропадают из «на сегодня» только на следующий день, когда их
@@ -110,11 +148,26 @@ export default function Dashboard() {
     <div className="space-y-5">
       <PageHeader title="Дашборд" subtitle="Что горит сегодня и как загружена команда" />
 
-      <div className="grid grid-cols-4 gap-3 max-xl:grid-cols-2">
-        {kpi.map(({ label, value, icon: Icon, tone, to, hint }) => (
-          <StatTile key={label} label={label} value={value} hint={hint} icon={<Icon />} tone={tone} to={to} />
+      <div className="grid grid-cols-4 gap-3 max-xl:grid-cols-2 max-sm:grid-cols-1">
+        {kpi.map(({ label, value, icon: Icon, tone, to, hint, footer, ...k }) => (
+          <StatTile key={label} label={label} value={value} hint={hint} icon={<Icon />} tone={tone} to={to} footer={footer} trend={"trend" in k ? k.trend : undefined} />
         ))}
       </div>
+
+      <Card>
+        <CardHeader title="Поток задач" subtitle={`Поступило ${chart.sumC} · выполнено ${chart.sumD} за ${range} дней`}
+          action={<Segmented size="sm" value={range} onChange={setRange} items={[{ id: "7", label: "7 дней" }, { id: "30", label: "30 дней" }, { id: "90", label: "3 месяца" }]} />} />
+        <div className="px-5 pt-4 pb-3">
+          <AreaChart labels={chart.labels} series={[
+            { key: "created", label: "Поступило", color: "#2b5ce6", values: chart.created },
+            { key: "done", label: "Выполнено", color: "#10b981", values: chart.done },
+          ]} />
+          <div className="mt-3 flex items-center gap-4 text-[12px] text-slate-500">
+            <span className="flex items-center gap-1.5"><span className="size-2 rounded-sm bg-brand-600" />Поступило</span>
+            <span className="flex items-center gap-1.5"><span className="size-2 rounded-sm bg-emerald-500" />Выполнено</span>
+          </div>
+        </div>
+      </Card>
 
       <div className="grid grid-cols-5 gap-4 max-xl:grid-cols-1">
         <div className="col-span-3 space-y-4 max-xl:col-span-1">

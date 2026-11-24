@@ -5,7 +5,7 @@
 import { useEffect, useMemo, useState, type ComponentType, type ReactNode } from "react";
 import { Navigate, useNavigate, useParams } from "react-router-dom";
 import { Bot, CalendarDays, Database, ListTodo, Search, Shield, Sparkles, Building2 } from "lucide-react";
-import { PageHeader, SettingsSection } from "../components/ui";
+import { PageHeader, SettingsSection, Tabs } from "../components/ui";
 import TelegramPanel from "./Integrations";
 import Integration1C from "./Integration1C";
 import IntegrationAI from "./IntegrationAI";
@@ -93,15 +93,14 @@ export default function SettingsHub() {
 
   return (
     <div className="space-y-5">
-      <PageHeader title="Настройки" subtitle="Всё, что настраивается в системе, — в одном месте." />
-      <div className="flex gap-6 max-lg:flex-col">
-        <aside className="w-56 shrink-0 space-y-3 max-lg:w-full lg:sticky lg:top-20 lg:self-start">
-          <div className="relative">
+      <PageHeader title="Настройки" subtitle="Всё, что настраивается в системе, — в одном месте."
+        actions={
+          <div className="relative w-72 max-sm:w-full">
             <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400" />
             <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Найти настройку…"
-              className="h-9 w-full rounded-lg border border-slate-300/80 pr-3 pl-9 text-[13px] placeholder:text-slate-400 focus:border-brand-500 focus:ring-3 focus:outline-none bg-white shadow-sm focus:ring-brand-100" />
+              className="h-9 w-full rounded-lg border border-slate-300/80 bg-white pr-3 pl-9 text-[13px] shadow-sm placeholder:text-slate-400 focus:border-brand-500 focus:ring-3 focus:ring-brand-100 focus:outline-none" />
             {q && (
-              <div className="absolute inset-x-0 top-full z-20 mt-1 overflow-hidden rounded-lg border border-slate-200 bg-white p-1 shadow-lg">
+              <div className="absolute inset-x-0 top-full z-30 mt-1 overflow-hidden rounded-lg border border-slate-200 bg-white p-1 shadow-lg">
                 {hits.length ? hits.map(({ g, sec }) => (
                   <button key={g.id + sec.id} onClick={() => { setQ(""); navigate(`/settings/${g.id}#${sec.id}`); setTimeout(() => document.getElementById(sec.id)?.scrollIntoView({ behavior: "smooth" }), 200); }}
                     className="block w-full rounded-md px-2.5 py-1.5 text-left hover:bg-slate-100">
@@ -112,25 +111,18 @@ export default function SettingsHub() {
               </div>
             )}
           </div>
-          <nav className="flex flex-col gap-0.5 max-lg:flex-row max-lg:overflow-x-auto max-lg:[scrollbar-width:none]">
-            {SETTINGS_GROUPS.map(({ id, label, icon: Icon }) => (
-              <button key={id} onClick={() => navigate(`/settings/${id}`)}
-                className={`flex h-8 shrink-0 items-center gap-2.5 rounded-md px-2.5 text-left text-[13px] font-medium whitespace-nowrap transition-colors ${id === current.id ? "bg-white text-slate-900 shadow-sm ring-1 ring-slate-200" : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"}`}>
-                <Icon className={`size-4 ${id === current.id ? "text-brand-600" : "text-slate-400"}`} />{label}
-              </button>
-            ))}
-          </nav>
-        </aside>
+        } />
 
-        <div className="min-w-0 flex-1 space-y-7">
-          <div className="border-b border-slate-200 pb-3">
-            <h2 className="text-[17px] font-semibold text-slate-900">{current.label}</h2>
-            <p className="mt-0.5 text-[13px] text-slate-500">{current.desc}</p>
-          </div>
-          {current.sections.map((sec) => (
-            <SettingsSection key={sec.id} id={sec.id} title={sec.title} hint={sec.hint}>{sec.render()}</SettingsSection>
-          ))}
-        </div>
+      {/* группы — горизонтальные вкладки сверху; липнут под шапкой при прокрутке */}
+      <div className="sticky top-14 z-10 -mx-4 bg-white/90 px-4 backdrop-blur sm:-mx-8 sm:px-8">
+        <Tabs items={SETTINGS_GROUPS.map(({ id, label, icon }) => ({ id, label, icon }))} value={current.id} onChange={(id) => navigate(`/settings/${id}`)} />
+      </div>
+
+      <div className="space-y-7">
+        <p className="text-[13px] text-slate-500">{current.desc}</p>
+        {current.sections.map((sec) => (
+          <SettingsSection key={sec.id} id={sec.id} title={sec.title} hint={sec.hint}>{sec.render()}</SettingsSection>
+        ))}
       </div>
     </div>
   );

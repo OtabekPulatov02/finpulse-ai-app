@@ -1,9 +1,9 @@
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
-  AlertCircle, BarChart3, Bell, Building2, CalendarDays, CheckCheck, ChevronDown,
+  AlertCircle, BarChart3, Bell, Building2, CalendarDays, CheckCheck, ChevronDown, ChevronRight,
   LayoutDashboard, ListTodo, LogOut, Menu as MenuIcon, Search, Send, Settings, User, Users, X, BotMessageSquare,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Avatar, Menu, MenuDivider, MenuItem, Toaster, toast } from "./ui";
 import { FilePreviewer } from "./FilePreview";
 import { displayStatus, hydrateFromBot, isOverdue, resetTasksStore, startLiveTasksSync, useTasks } from "../store/tasks";
@@ -33,7 +33,7 @@ function SidebarNav({
 }) {
   return (
     <>
-      <div className="flex h-14 shrink-0 items-center border-b border-slate-200 px-4">
+      <div className="flex h-14 shrink-0 items-center px-5 pt-2">
         <img src="/logo-cutted.png" alt="Finpulse CRM" className="h-9 w-auto object-contain" />
       </div>
       <div className="eyebrow px-5 pt-5 pb-1.5">Работа</div>
@@ -46,7 +46,7 @@ function SidebarNav({
             onClick={onNavigate}
             className={({ isActive }) =>
               `group flex h-8 items-center gap-2.5 rounded-md px-2.5 text-[13px] font-medium transition-colors ${
-                isActive ? "bg-slate-100 text-slate-900" : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                isActive ? "bg-white text-slate-900 shadow-sm ring-1 ring-slate-200/80" : "text-slate-600 hover:bg-slate-200/50 hover:text-slate-900"
               }`
             }
           >
@@ -63,13 +63,14 @@ function SidebarNav({
             )}
           </NavLink>
         ))}
+        {role === "admin" && <div className="eyebrow mt-auto px-2.5 pt-4 pb-1.5">Система</div>}
         {role === "admin" && (
           <NavLink
             to="/settings"
             onClick={onNavigate}
             className={({ isActive }) =>
-              `group mt-auto flex h-8 items-center gap-2.5 rounded-md px-2.5 text-[13px] font-medium transition-colors ${
-                isActive ? "bg-slate-100 text-slate-900" : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+              `group flex h-8 items-center gap-2.5 rounded-md px-2.5 text-[13px] font-medium transition-colors ${
+                isActive ? "bg-white text-slate-900 shadow-sm ring-1 ring-slate-200/80" : "text-slate-600 hover:bg-slate-200/50 hover:text-slate-900"
               }`
             }
           >
@@ -82,8 +83,8 @@ function SidebarNav({
           </NavLink>
         )}
       </nav>
-      <div className="border-t border-slate-200 p-3">
-        <div className="flex items-center gap-2.5 rounded-md px-2 py-1.5">
+      <div className="p-3">
+        <div className="flex items-center gap-2.5 rounded-lg border border-slate-200 bg-white px-2.5 py-2 shadow-sm">
           <Avatar name={displayName} />
           <div className="min-w-0">
             <div className="truncate text-[13px] font-medium text-slate-900">{displayName}</div>
@@ -104,7 +105,14 @@ export default function Layout() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [searchQ, setSearchQ] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
-  useEffect(() => { setMobileNavOpen(false); setSearchOpen(false); setSearchQ(""); }, [location.pathname]);
+  const searchRef = useRef<HTMLInputElement>(null);
+  /* ⌘K / Ctrl+K — фокус в поиск */
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => { if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") { e.preventDefault(); searchRef.current?.focus(); } };
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
+  }, []);
+  useEffect(() => { setMobileNavOpen(false); setSearchOpen(false); setSearchQ(""); document.getElementById("app-scroll")?.scrollTo(0, 0); }, [location.pathname]);
   useEffect(() => { void hydrateFromBot(); void hydrateClients(); startLiveTasksSync(); }, []);
   const activeCount = tasks.filter((t) => t.status === "Новая" || t.status === "В работе").length;
 
@@ -154,6 +162,8 @@ export default function Layout() {
     .sort((a, b) => b.id - a.id)
     .slice(0, 3);
   const role = session?.role || "admin";
+  const pageTitle = location.pathname.startsWith("/settings") ? "Настройки"
+    : [...ALL_NAV].sort((a, b) => b.to.length - a.to.length).find((n) => location.pathname === n.to || location.pathname.startsWith(n.to + "/"))?.label ?? "";
   const nav = ALL_NAV.filter((item) => !item.hideFor.includes(role));
   const displayName = session?.name || "Ибрагимова Юлдуз";
   const roleLabel = session ? ROLE_LABEL[session.role] : "Главбух · супер-админ";
@@ -174,7 +184,7 @@ export default function Layout() {
           Гостевой режим — демо-данные, действия недоступны
         </div>
       )}
-      <aside className="sticky top-0 flex h-screen w-60 shrink-0 flex-col border-r border-slate-200 bg-white max-lg:hidden">
+      <aside className="sticky top-0 flex h-screen w-60 shrink-0 flex-col max-lg:hidden">
         <SidebarNav nav={nav} activeCount={activeCount} role={role} displayName={displayName} roleLabel={roleLabel} />
       </aside>
 
@@ -196,15 +206,23 @@ export default function Layout() {
         </div>
       )}
 
-      <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-20 flex h-14 items-center gap-3 border-b border-slate-200 bg-white/95 px-4 backdrop-blur sm:px-6">
+      {/* контент — «вставкой» на фоне сайдбара (как sidebar inset в shadcn/ui) */}
+      <div className="flex min-w-0 flex-1 flex-col lg:h-screen lg:py-2 lg:pr-2">
+       <div id="app-scroll" className="flex min-w-0 flex-1 flex-col bg-white lg:overflow-y-auto lg:rounded-xl lg:border lg:border-slate-200 lg:shadow-sm">
+        <header className="sticky top-0 z-20 flex h-14 items-center gap-3 border-b border-slate-200 bg-white/90 px-4 backdrop-blur sm:px-6">
           <button
             onClick={() => setMobileNavOpen(true)}
             aria-label="Меню" className="flex size-8 items-center justify-center rounded-md text-slate-500 hover:bg-slate-100 hover:text-slate-900 lg:hidden"
           >
             <MenuIcon className="size-[18px]" />
           </button>
-          <div className={`relative w-full max-w-sm ${session?.role === "client" ? "invisible" : ""}`}>
+          {/* где я: раздел страницы */}
+          <div className="flex min-w-0 items-center gap-2 text-[13px] max-md:hidden">
+            <span className="text-slate-400">Finpulse</span>
+            <ChevronRight className="size-3.5 text-slate-300" />
+            <span className="truncate font-medium text-slate-900">{pageTitle}</span>
+          </div>
+          <div className={`relative ml-auto w-full max-w-72 max-md:ml-0 ${session?.role === "client" ? "invisible" : ""}`}>
             <Search className="absolute top-1/2 left-3 z-10 size-4 -translate-y-1/2 text-slate-400" />
             <input
               value={searchQ}
@@ -212,9 +230,11 @@ export default function Layout() {
               onFocus={() => searchQ && setSearchOpen(true)}
               onBlur={() => setTimeout(() => setSearchOpen(false), 150)}
               onKeyDown={(e) => { if (e.key === "Escape") { setSearchQ(""); setSearchOpen(false); } }}
+              ref={searchRef}
               placeholder="Поиск клиентов и задач…"
-              className="h-8 w-full rounded-md border border-slate-200 bg-slate-50 pr-3 pl-9 text-[13px] transition placeholder:text-slate-400 hover:border-slate-300 focus:border-brand-500 focus:bg-white focus:ring-3 focus:ring-brand-100 focus:outline-none"
+              className="h-8 w-full rounded-md border border-slate-200 bg-slate-50 pr-12 pl-9 text-[13px] transition placeholder:text-slate-400 hover:border-slate-300 focus:border-brand-500 focus:bg-white focus:ring-3 focus:ring-brand-100 focus:outline-none"
             />
+            {!searchQ && <kbd className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 rounded border border-slate-200 bg-white px-1.5 font-sans text-[10px] font-medium text-slate-400 max-md:hidden">⌘K</kbd>}
             {searchOpen && searchTerm && (
               <div className="absolute top-full left-0 z-30 mt-1.5 max-h-96 w-full min-w-72 overflow-y-auto rounded-lg border border-slate-200 bg-white p-1 shadow-lg">
                 {hasSearchResults ? (
@@ -258,7 +278,7 @@ export default function Layout() {
               </div>
             )}
           </div>
-          <div className="ml-auto flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 max-md:ml-auto">
             <Menu trigger={
               <button aria-label="Уведомления" className="relative flex size-8 items-center justify-center rounded-md text-slate-500 hover:bg-slate-100 hover:text-slate-900">
                 <Bell className="size-4" />
@@ -314,6 +334,7 @@ export default function Layout() {
         <main className="mx-auto w-full max-w-[1280px] flex-1 px-4 py-5 sm:px-8 sm:py-7">
           <Outlet />
         </main>
+       </div>
         <Toaster />
         <FilePreviewer />
       </div>

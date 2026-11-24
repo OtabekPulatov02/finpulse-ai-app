@@ -39,7 +39,7 @@ export function CardHeader({ title, subtitle, action }: { title?: ReactNode; sub
     </div>
   );
   return (
-    <div className="flex min-h-[52px] items-center justify-between gap-3 border-b border-slate-200 px-5 py-3">
+    <div className="flex min-h-[52px] flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b border-slate-200 px-5 py-3">
       <div className="min-w-0">
         <h2 className="text-[14px] leading-5 font-semibold text-slate-900">{title}</h2>
         {subtitle && <p className="mt-0.5 text-[12px] text-slate-500">{subtitle}</p>}
@@ -66,7 +66,7 @@ export function Avatar({ name, className = "" }: { name: string; className?: str
 }
 
 /* ---------- Modal с blur-фоном ---------- */
-import { UserRound, X } from "lucide-react";
+import { Minus, TrendingDown, TrendingUp, UserRound, X } from "lucide-react";
 import { useEffect, useState } from "react";
 
 export function Modal({
@@ -392,21 +392,35 @@ export function SaveButton({ dirty, saving, onClick, label = "Сохранить
   );
 }
 
-/** KPI-плитка: подпись, число, необязательная подсказка. Цвет — только у числа
-    и только когда он что-то значит (просрочки > 0). Иконка нейтральная. */
-export function StatTile({ label, value, hint, icon, tone, to }: {
+/** KPI-плитка в духе shadcn/ui (dashboard «section cards»): подпись, крупное
+    число, бейдж тренда справа, подвал из двух строк. Лёгкий градиент к акценту. */
+export function StatTile({ label, value, hint, icon, tone, to, trend, footer }: {
   label: string; value: ReactNode; hint?: ReactNode; icon?: ReactNode;
   tone?: "default" | "danger" | "success" | "brand"; to?: string;
+  /** тренд к прошлому периоду: текст («+12%») и знак — что считать хорошим решает good */
+  trend?: { text: string; dir: "up" | "down" | "flat"; good?: boolean };
+  footer?: ReactNode;
 }) {
   const color = tone === "danger" ? "text-red-600" : tone === "success" ? "text-emerald-600" : tone === "brand" ? "text-brand-600" : "text-slate-900";
+  const TrendIcon = trend?.dir === "up" ? TrendingUp : trend?.dir === "down" ? TrendingDown : Minus;
+  const trendTone = !trend || trend.dir === "flat" || trend.good === undefined ? "text-slate-600" : trend.good ? "text-emerald-700" : "text-red-600";
   const body = (
-    <div className={`h-full rounded-xl border border-slate-200 bg-white px-5 py-4 shadow-sm ${to ? "transition-colors group-hover:border-slate-300 group-hover:bg-slate-25" : ""}`}>
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-[12px] font-medium text-slate-500">{label}</span>
-        {icon && <span className="text-slate-400 [&_svg]:size-4">{icon}</span>}
+    <div className={`flex h-full flex-col rounded-xl border border-slate-200 bg-gradient-to-t from-brand-50/70 to-white px-5 pt-4 pb-4 shadow-sm ${to ? "transition-colors group-hover:border-slate-300" : ""}`}>
+      <div className="flex items-start justify-between gap-2">
+        <span className="flex items-center gap-1.5 text-[13px] text-slate-500 [&_svg]:size-3.5 [&_svg]:text-slate-400">{icon}{label}</span>
+        {trend && (
+          <span className={`inline-flex h-[22px] items-center gap-1 rounded-md border border-slate-200 bg-white px-1.5 text-[11px] font-medium tabular-nums ${trendTone}`}>
+            <TrendIcon className="size-3" />{trend.text}
+          </span>
+        )}
       </div>
-      <div className={`mt-2 text-[28px] leading-8 font-semibold tracking-[-0.02em] tabular-nums ${color}`}>{value}</div>
-      {hint && <div className="mt-1 text-[12px] text-slate-500">{hint}</div>}
+      <div className={`mt-1.5 text-[30px] leading-9 font-semibold tracking-[-0.02em] tabular-nums ${color}`}>{value}</div>
+      {(footer || hint) && (
+        <div className="mt-auto space-y-0.5 pt-3 text-[12px]">
+          {footer && <div className="flex items-center gap-1.5 font-medium text-slate-800 [&_svg]:size-3.5">{footer}</div>}
+          {hint && <div className="text-slate-500">{hint}</div>}
+        </div>
+      )}
     </div>
   );
   return to ? <LinkTo to={to}>{body}</LinkTo> : body;
