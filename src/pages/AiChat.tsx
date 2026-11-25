@@ -144,9 +144,16 @@ export default function AiChat() {
         ? { role: "assistant", content: r.reply, steps: r.steps, askOptions: r.askOptions }
         : { role: "assistant", content: r.error || "Агент не смог ответить.", error: true }]);
       if (r.chatId) { setActiveId(r.chatId); fetchAiChats().then(setChats).catch(() => {}); }
-    } catch {
+    } catch (e) {
       if (my !== reqId.current) return;
-      setItems([...next, { role: "assistant", content: "Нет связи с сервером. Проверьте интернет и повторите.", error: true }]);
+      /* «нет связи» показываем только если браузер правда офлайн; иначе это
+         обрыв по времени на сервере — честно так и пишем */
+      const msg = !navigator.onLine
+        ? "Нет интернета. Проверьте подключение и повторите."
+        : (e as Error)?.name === "TimeoutError"
+          ? "Сервер не ответил за минуту. Повторите или разбейте запрос на части."
+          : "Запрос оборвался на сервере. Повторите — обычно со второго раза проходит.";
+      setItems([...next, { role: "assistant", content: msg, error: true }]);
     } finally {
       if (my === reqId.current) setBusySince(null);
     }
