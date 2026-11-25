@@ -151,7 +151,7 @@ export default function AiChat() {
       const msg = !navigator.onLine
         ? "Нет интернета. Проверьте подключение и повторите."
         : (e as Error)?.name === "TimeoutError"
-          ? "Сервер не ответил за минуту. Повторите или разбейте запрос на части."
+          ? "Сервер не ответил за 5 минут. Повторите или разбейте запрос на части."
           : "Запрос оборвался на сервере. Повторите — обычно со второго раза проходит.";
       setItems([...next, { role: "assistant", content: msg, error: true }]);
     } finally {
@@ -302,7 +302,7 @@ export default function AiChat() {
                 <span className="flex gap-1">
                   {[0, 150, 300].map((d) => <span key={d} className="size-1.5 animate-bounce rounded-full bg-slate-400" style={{ animationDelay: `${d}ms` }} />)}
                 </span>
-                {elapsed < 8 ? "Думаю…" : elapsed < 25 ? `Читаю данные и считаю… ${elapsed} с` : `Сложная задача, ещё немного… ${elapsed} с`}
+                {elapsed < 8 ? "Думаю…" : elapsed < 25 ? `Читаю данные и считаю… ${elapsed} с` : elapsed < 60 ? `Сложная задача, ещё немного… ${elapsed} с` : `Работаю дольше обычного — до 5 мин · ${Math.floor(elapsed / 60)}:${String(elapsed % 60).padStart(2, "0")}`}
                 <Button variant="ghost" size="sm" onClick={stop} icon={<Square className="size-3" />}>Остановить</Button>
               </div>
             )}
